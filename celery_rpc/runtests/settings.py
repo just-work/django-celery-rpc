@@ -5,7 +5,9 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 INSTALLED_APPS = [
-    'celery_rpc.tests.app',
+    'django.contrib.contenttypes',
+    'celery_rpc.runtests',
+    'celery_rpc.tests'
 ]
 
 DATABASE_ENGINE = 'django.db.backends.sqlite3',
