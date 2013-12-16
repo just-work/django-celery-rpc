@@ -9,7 +9,7 @@ import sys
 
 # fix sys path so we don't need to setup PYTHONPATH
 sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
-os.environ['DJANGO_SETTINGS_MODULE'] = 'celery_rpc.runtests.settings'
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'celery_rpc.runtests.settings')
 
 import django
 from django.conf import settings

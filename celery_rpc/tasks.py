@@ -2,9 +2,9 @@
 import inspect
 
 from celery import Task
-from django.conf import settings
 from django.db.models.base import Model
-from celery_rpc.celery import rpc
+from celery_rpc.app import rpc
+from celery_rpc import config
 from kombu.utils import symbol_by_name
 from rest_framework.serializers import ModelSerializer
 
@@ -19,7 +19,7 @@ class ModelTask(Task):
         """
         self.request.model = self._import_model(model_name)
         args = [model_name] + list(args)
-        return super(ModelTask, self).__call__(*args, **kwargs)
+        return self.run(*args, **kwargs)
 
     def _import_model(self, model_name):
         """ Import class by full name, check type and return.
@@ -35,51 +35,83 @@ class ModelTask(Task):
         """
         return model.objects.all()
 
-    def _get_serializer_class(self, model):
+    def _create_serializer_class(self, model_class):
         """ Return REST framework serializer class for model.
         """
         class GenericModelSerializer(ModelSerializer):
             class Meta:
-                model = model
+                model = model_class
+
+            def get_identity(self, data):
+                pk_name = self.Meta.model._meta.pk.attname
+                try:
+                    return data.get('pk', data.get(pk_name, None))
+                except AttributeError:
+                    return None
 
         return GenericModelSerializer
 
+    @property
+    def model(self):
+        return self.request.model
 
-DEFAULT_FILTER_LIMIT = getattr(settings.CELERY_RPC_CONFIG,
-                               'DEFAULT_FILTER_LIMIT', 1000)
+    @property
+    def pk_name(self):
+        return self.model._meta.pk.attname
+
+    @property
+    def default_queryset(self):
+        return self._create_queryset(self.model)
+
+    @property
+    def serializer_class(self):
+        return self._create_serializer_class(self.model)
+
+
+
 
 @rpc.task(bind=True, base=ModelTask)
 def filter(self, model_name, filters=None, offset=0,
-           limit=DEFAULT_FILTER_LIMIT, fields=None,  exclude=[], depth=0,
-           manager='objects', database=None, *args, **kwargs):
+           limit=config.DEFAULT_FILTER_LIMIT, fields=None,  exclude=[],
+           depth=0, manager='objects', database=None, *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model_name: full name of model class like 'app.models:Model'
-    :param filters: filter supported by model manager like{'pk__in': [1,2,3]}
-        also can contains:
-            'start': 5000
-            'limit': 5000
-    :param fields: limit result by fields, for example ['id', name]
+    :param filters: filter supported by model manager like {'pk__in': [1,2,3]}
+    :param offset: offset of first item in the queryset (by default 0)
+    :param limit: max number of result list (by default 1000)
     :return: list of serialized model data
 
     """
-    model = self.request.model
     filters = filters if isinstance(filters, dict) else {}
-    qs = self._create_queryset(model).filter(**filters)[offset:offset+limit]
-    serializer = self._get_serializer_class(model)
-    return serializer(isinstance=qs, many=True)
+    qs = self.default_queryset.filter(**filters)[offset:offset+limit]
+    return self.serializer_class(instance=qs, many=True).data
 
 
-@rpc.tasks(bind=True, base=ModelTask)
+@rpc.task(bind=True, base=ModelTask)
 def update(self, model_name, data, fields=None, nocache=False,
-           manager='objects',
-           database=None, *args, **kwargs):
+           manager='objects', database=None, *args, **kwargs):
     """ Update Django models by PK and return new values.
 
     :param model_name: model class like 'app.models:ModelClass'
-    :param data: new values of objects
-        [{'id': 1, 'title': 'hello'}]
-    :return: list of new model
+    :param data: values of one or several objects
+        {'id': 1, 'title': 'hello'} or [{'id': 1, 'title': 'hello'}]
+    :return: serialized model data or list of one or errors
 
     """
+    pk_name = self.pk_name
+    get_pk_value = lambda item: item.get('pk', item.get(pk_name))
+    if isinstance(data, dict):
+        instance = self.default_queryset.get(pk=get_pk_value(data))
+        many = False
+    else:
+        pk_values = [get_pk_value(item) for item in data]
+        instance = self.default_queryset.filter(pk__in=pk_values)
+        many = True
 
+    serializer = self.serializer_class(instance=instance, data=data, many=many)
+    if not serializer.errors:
+        serializer.save()
+        return serializer.data
+    else:
+        return serializer.errors

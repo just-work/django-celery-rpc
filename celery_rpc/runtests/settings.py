@@ -19,3 +19,7 @@ DATABASES = {
 }
 
 SECRET_KEY = str(uuid4())
+
+CELERY_RPC_CONFIG = {
+    'CELERY_ALWAYS_EAGER': True
+}
