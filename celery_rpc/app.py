@@ -1,4 +1,3 @@
-# coding: utf-8
 from __future__ import absolute_import
 
 import os
@@ -9,8 +8,14 @@ from celery import Celery
 from django.conf import settings
 
 
-rpc = Celery('celery-rpc')
+def create_celery_app(config=None, **opts):
+    opts.setdefault('main', 'celery-rpc')
+    app = Celery(**opts)
+    app.config_from_object('celery_rpc.config')
+    if config:
+        app.conf.update(config)
+    return app
 
-rpc.config_from_object('celery_rpc.config')
+rpc = create_celery_app()
 rpc.autodiscover_tasks(lambda: settings.INSTALLED_APPS,
                        related_name="celery_rpc")

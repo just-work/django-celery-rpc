@@ -14,11 +14,11 @@ class ModelTask(Task):
     """
     abstract = True
 
-    def __call__(self, model_name,  *args, **kwargs):
+    def __call__(self, model,  *args, **kwargs):
         """ Prepare context for calling task function.
         """
-        self.request.model = self._import_model(model_name)
-        args = [model_name] + list(args)
+        self.request.model = self._import_model(model)
+        args = [model] + list(args)
         return self.run(*args, **kwargs)
 
     def _import_model(self, model_name):
@@ -68,15 +68,13 @@ class ModelTask(Task):
         return self._create_serializer_class(self.model)
 
 
-
-
 @rpc.task(bind=True, base=ModelTask)
-def filter(self, model_name, filters=None, offset=0,
+def filter(self, model, filters=None, offset=0,
            limit=config.DEFAULT_FILTER_LIMIT, fields=None,  exclude=[],
            depth=0, manager='objects', database=None, *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
-    :param model_name: full name of model class like 'app.models:Model'
+    :param model: full name of model class like 'app.models:Model'
     :param filters: filter supported by model manager like {'pk__in': [1,2,3]}
     :param offset: offset of first item in the queryset (by default 0)
     :param limit: max number of result list (by default 1000)
