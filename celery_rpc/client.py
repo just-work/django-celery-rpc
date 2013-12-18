@@ -109,7 +109,7 @@ class Client(object):
 
         """
         try:
-            r = task.filter.apply_async(args=args, kwargs=kwargs, **options)
+            r = task.apply_async(args=args, kwargs=kwargs, **options)
         except Exception as e:
             raise self.RequestError(
                 'Something goes wrong while sending request', e)
@@ -127,10 +127,10 @@ class Client(object):
 
         """
         names = (cls.FILTER_TASK_NAME, cls.UPDATE_TASK_NAME)
-        stub_tasks = {}
+        tasks = {}
         for name in names:
             @app.task(bind=True, name=name)
             def task_stub(*args, **kwargs):
                 pass
-            stub_tasks[name] = task_stub
-        return task_stub
+            tasks[name] = task_stub
+        return tasks

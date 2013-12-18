@@ -17,5 +17,7 @@ def create_celery_app(config=None, **opts):
     return app
 
 rpc = create_celery_app()
+
+rpc.autodiscover_tasks(['celery_rpc'])
 rpc.autodiscover_tasks(lambda: settings.INSTALLED_APPS,
                        related_name="celery_rpc")

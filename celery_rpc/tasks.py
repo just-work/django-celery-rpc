@@ -68,7 +68,7 @@ class ModelTask(Task):
         return self._create_serializer_class(self.model)
 
 
-@rpc.task(bind=True, base=ModelTask)
+@rpc.task(name='celery_rpc.filter', bind=True, base=ModelTask)
 def filter(self, model, filters=None, offset=0,
            limit=config.DEFAULT_FILTER_LIMIT, fields=None,  exclude=[],
            depth=0, manager='objects', database=None, *args, **kwargs):
@@ -86,7 +86,7 @@ def filter(self, model, filters=None, offset=0,
     return self.serializer_class(instance=qs, many=True).data
 
 
-@rpc.task(bind=True, base=ModelTask)
+@rpc.task(name='celery_rpc.update', bind=True, base=ModelTask)
 def update(self, model_name, data, fields=None, nocache=False,
            manager='objects', database=None, *args, **kwargs):
     """ Update Django models by PK and return new values.
