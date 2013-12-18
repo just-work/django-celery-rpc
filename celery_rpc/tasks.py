@@ -1,12 +1,15 @@
 # coding: utf-8
+from __future__ import absolute_import
 import inspect
 
 from celery import Task
-from django.db.models.base import Model
-from celery_rpc.app import rpc
-from celery_rpc import config
 from kombu.utils import symbol_by_name
+from django.db.models.base import Model
 from rest_framework.serializers import ModelSerializer
+
+from . import config
+from .app import rpc
+from .exceptions import RestFrameworkError
 
 
 class ModelTask(Task):
@@ -70,7 +73,7 @@ class ModelTask(Task):
 
 @rpc.task(name='celery_rpc.filter', bind=True, base=ModelTask)
 def filter(self, model, filters=None, offset=0,
-           limit=config.DEFAULT_FILTER_LIMIT, fields=None,  exclude=[],
+           limit=config.FILTER_LIMIT, fields=None,  exclude=[],
            depth=0, manager='objects', database=None, *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
@@ -112,4 +115,5 @@ def update(self, model_name, data, fields=None, nocache=False,
         serializer.save()
         return serializer.data
     else:
-        return serializer.errors
+        raise RestFrameworkError('Serializer errors happened',
+                                 serializer.errors)

@@ -1,7 +1,10 @@
+from __future__ import absolute_import
 
 from celery.exceptions import TimeoutError
 
-from celery_rpc.app import create_celery_app
+from .config import GET_RESULT_TIMEOUT
+from .exceptions import RestFrameworkError
+from .utils import create_celery_app
 
 
 class Client(object):
@@ -54,6 +57,7 @@ class Client(object):
             offset - offset from which return a results
             limit - max number results
         :return: list of filtered objects or AsyncResult if async is True
+        :raise: see get_result()
 
         """
         task = self._task_stubs[self.FILTER_TASK_NAME]
@@ -85,11 +89,19 @@ class Client(object):
         :param async_result: Celery AsyncResult object
         :param timeout: timeout of waiting for results
         :return: results or exception if something goes wrong
+        :raise RestFrameworkError: error in the middle of Django REST
+            Framework at server (only is serializer is pickle or yaml)
+        :raise Client.ResponseError: something goes wrong
+
         """
+        timeout = timeout or GET_RESULT_TIMEOUT
         try:
             return async_result.get(timeout=timeout)
         except TimeoutError:
             raise self.TimeoutError('Timeout exceeded while waiting for results')
+        except RestFrameworkError:
+            # !!! Not working with JSON serializer
+            raise
         except Exception as e:
             raise self.ResponseError(
                 'Something goes wrong while getting results', e)
@@ -106,6 +118,9 @@ class Client(object):
         :param options: optional parameters for apply_async
         :return: results or AsyncResult if async is True or
             exception if something goes wrong
+        :raise RestFrameworkError: error in the middle of Django REST
+            Framework at server (if async=False).
+        :raise Client.ResponseError: something goes wrong (if async=False)
 
         """
         try:

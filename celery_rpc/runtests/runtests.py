@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 # http://ericholscher.com/blog/2009/jun/29/enable-setuppy-test-your-django-apps/
 # http://www.travisswicegood.com/2010/01/17/django-virtualenv-pip-and-fabric/

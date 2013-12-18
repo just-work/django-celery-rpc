@@ -14,7 +14,10 @@ def _json_dumps(obj):
 
 registry.register('x-json', _json_dumps, json.loads, 'application/json', 'utf-8')
 
-DEFAULT_FILTER_LIMIT = 1000
+# Default limit for results of filter call
+FILTER_LIMIT = 1000
+# Default timeout for getting results
+GET_RESULT_TIMEOUT = 10
 
 # See Celery configuration parameters at
 # http://docs.celeryproject.org/en/latest/configuration.html
@@ -33,8 +36,8 @@ CELERY_ACKS_LATE = True
 CELERY_TASK_SERIALIZER = 'x-json'
 CELERY_RESULT_SERIALIZER = 'x-json'
 
-CELERYD_TASK_SOFT_TIME_LIMIT = 10
-CELERYD_TASK_TIME_LIMIT = 60
+CELERYD_TASK_SOFT_TIME_LIMIT = GET_RESULT_TIMEOUT + 1
+CELERYD_TASK_TIME_LIMIT = GET_RESULT_TIMEOUT * 2
 
 # Options can be overridden by CELERY_RPC_CONFIG dict in Django settings.py
 _CONFIG = getattr(_settings, 'CELERY_RPC_CONFIG', {})
