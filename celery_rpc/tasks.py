@@ -24,16 +24,18 @@ class ModelTask(Task):
         args = [model] + list(args)
         return self.run(*args, **kwargs)
 
-    def _import_model(self, model_name):
+    @staticmethod
+    def _import_model(model_name):
         """ Import class by full name, check type and return.
         """
-        cls = symbol_by_name(model_name)
-        if inspect.isclass(cls) and issubclass(cls, Model):
-            return cls
+        sym = symbol_by_name(model_name)
+        if inspect.isclass(sym) and issubclass(sym, Model):
+            return sym
         raise TypeError(
-            "Symbol '{}' is not a Django model_name".format(model_name))
+            "Symbol '{}' is not a Django model".format(model_name))
 
-    def _create_queryset(self, model):
+    @staticmethod
+    def _create_queryset(model):
         """ Construct queryset by params.
         """
         return model.objects.all()
@@ -117,3 +119,41 @@ def update(self, model_name, data, fields=None, nocache=False,
     else:
         raise RestFrameworkError('Serializer errors happened',
                                  serializer.errors)
+
+
+class FunctionTask(Task):
+    """ Base task for calling function.
+    """
+    abstract = True
+
+    def __call__(self, function,  *args, **kwargs):
+        """ Prepare context for calling task function.
+        """
+        self.request.function = self._import_model(function)
+        args = [function] + list(args)
+        return self.run(*args, **kwargs)
+
+    @staticmethod
+    def _import_function(func_name):
+        """ Import class by full name, check type and return.
+        """
+        sym = symbol_by_name(func_name)
+        if inspect.isfunction(sym):
+            return sym
+        raise TypeError("Symbol '{}' is not a function".format(func_name))
+
+    @property
+    def function(self):
+        return self.request.function
+
+@rpc.task(name='celery_rpc.call', bind=True, base=FunctionTask)
+def call(function, args, kwargs):
+     """ Call function with args & kwargs
+
+    :param function: full function name like 'package.module:function'
+    :param args: positional parameters
+    :param kwargs: named parameters
+        {'id': 1, 'title': 'hello'} or [{'id': 1, 'title': 'hello'}]
+    :return: result of function
+
+    """
