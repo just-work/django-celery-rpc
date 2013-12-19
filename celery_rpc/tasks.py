@@ -92,11 +92,11 @@ def filter(self, model, filters=None, offset=0,
 
 
 @rpc.task(name='celery_rpc.update', bind=True, base=ModelTask)
-def update(self, model_name, data, fields=None, nocache=False,
+def update(self, model, data, fields=None, nocache=False,
            manager='objects', database=None, *args, **kwargs):
     """ Update Django models by PK and return new values.
 
-    :param model_name: model class like 'app.models:ModelClass'
+    :param model: full name of model class like 'app.models:ModelClass'
     :param data: values of one or several objects
         {'id': 1, 'title': 'hello'} or [{'id': 1, 'title': 'hello'}]
     :return: serialized model data or list of one or errors
@@ -129,7 +129,7 @@ class FunctionTask(Task):
     def __call__(self, function,  *args, **kwargs):
         """ Prepare context for calling task function.
         """
-        self.request.function = self._import_model(function)
+        self.request.function = self._import_function(function)
         args = [function] + list(args)
         return self.run(*args, **kwargs)
 
@@ -138,7 +138,7 @@ class FunctionTask(Task):
         """ Import class by full name, check type and return.
         """
         sym = symbol_by_name(func_name)
-        if inspect.isfunction(sym):
+        if hasattr(sym, '__call__'):
             return sym
         raise TypeError("Symbol '{}' is not a function".format(func_name))
 
@@ -147,8 +147,8 @@ class FunctionTask(Task):
         return self.request.function
 
 @rpc.task(name='celery_rpc.call', bind=True, base=FunctionTask)
-def call(function, args, kwargs):
-     """ Call function with args & kwargs
+def call(self, function, args, kwargs):
+    """ Call function with args & kwargs
 
     :param function: full function name like 'package.module:function'
     :param args: positional parameters
@@ -157,3 +157,14 @@ def call(function, args, kwargs):
     :return: result of function
 
     """
+    args = args or []
+    kwargs = kwargs or {}
+    if not isinstance(args, list):
+        message = "Invalid type of 'args', need: 'list', got: '{}'".format(
+            type(args))
+        raise TypeError(message)
+    if not isinstance(kwargs, dict):
+        message = "Invalid type of 'kwargs', need: 'dict', got: '{}'".format(
+            type(args))
+        raise TypeError(message)
+    return self.function(*args, **kwargs)

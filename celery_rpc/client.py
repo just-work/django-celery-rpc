@@ -33,6 +33,9 @@ class Client(object):
 
     FILTER_TASK_NAME = 'celery_rpc.filter'
     UPDATE_TASK_NAME = 'celery_rpc.update'
+    CALL_TASK_NAME = 'celery_rpc.call'
+
+    TASK_NAMES = (FILTER_TASK_NAME, UPDATE_TASK_NAME, CALL_TASK_NAME, )
 
     _app = None
     _task_stubs = None
@@ -46,32 +49,36 @@ class Client(object):
         self._app = create_celery_app(config=app_config)
         self._task_stubs = self._register_stub_tasks(self._app)
 
-    def filter(self, model, async=False, timeout=None, **options):
+    def filter(self, model, kwargs=None, async=False, timeout=None, **options):
         """ Call filtering Django model objects on server
 
         :param model: full name of model symbol like 'package.module:Class'
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
-        :param options: optional parameters of request
+        :param kwargs: optional parameters of request
             filters - dict of terms compatible with django database query
             offset - offset from which return a results
             limit - max number results
+        :param **options: optional parameter of apply_async
         :return: list of filtered objects or AsyncResult if async is True
         :raise: see get_result()
 
         """
         task = self._task_stubs[self.FILTER_TASK_NAME]
         args = (model, )
-        return self._send_request(task, args, options, async, timeout)
+        return self._send_request(task, args, kwargs, async, timeout,
+                                  **options)
 
-    def update(self, model, data, async=False, timeout=None, **options):
+    def update(self, model, data, kwargs=None, async=False, timeout=None,
+               **options):
         """ Call update Django model objects on server
 
         :param model: full name of model symbol like 'package.module:Class'
         :param data: dict with new data or list of them
+        :param kwargs: optional parameters of request (dict)
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
-        :param options: optional parameters of request
+        :param **options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
             AsyncResult if async is True
         :raise InvalidRequest: if data has non iterable type
@@ -81,7 +88,26 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         task = self._task_stubs[self.UPDATE_TASK_NAME]
-        return self._send_request(task, args, options, async, timeout)
+        return self._send_request(task, args, kwargs, async, timeout,
+                                  **options)
+
+    def call(self, function, args=None, kwargs=None, async=False, timeout=None,
+             **options):
+        """ Call function on server
+
+        :param function: full name of model symbol like 'package.module:Class'
+        :param args: list with positional parameters of function
+        :param kwargs: dict with named parameters of function
+        :param async: enables delayed collecting of result
+        :param timeout: timeout of waiting for results
+        :param **options: optional parameter of apply_async
+        :return: result of function call or AsyncResult if async is True
+        :raise InvalidRequest: if data has non iterable type
+
+        """
+        task = self._task_stubs[self.CALL_TASK_NAME]
+        args = (function, args, kwargs)
+        return self._send_request(task, args, None, async, timeout, **options)
 
     def get_result(self, async_result, timeout=None):
         """ Collect results from delayed result object
@@ -141,9 +167,8 @@ class Client(object):
         :return: dict {task_name: task_stub)
 
         """
-        names = (cls.FILTER_TASK_NAME, cls.UPDATE_TASK_NAME)
         tasks = {}
-        for name in names:
+        for name in cls.TASK_NAMES:
             @app.task(bind=True, name=name)
             def task_stub(*args, **kwargs):
                 pass

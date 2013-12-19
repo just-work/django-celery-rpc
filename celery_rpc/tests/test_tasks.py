@@ -66,3 +66,18 @@ class UpdateTaskTests(BaseTaskTests):
 
         updated = [get_model_dict(o) for o in SimpleModel.objects.all()[0:2]]
         self.assertEquals(expected, updated)
+
+
+def plus(a, b):
+    return a + b
+
+
+class CallTaskTests(TestCase):
+
+    def testCallPlus(self):
+        a = 2
+        b = 3
+        expected = a + b
+        r = tasks.call.delay('celery_rpc.tests.test_tasks:plus', [a, b],
+                             None)
+        self.assertEquals(expected, r.get())
