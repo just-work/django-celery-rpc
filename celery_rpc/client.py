@@ -55,6 +55,7 @@ class Client(object):
         :param model: full name of model symbol like 'package.module:Class'
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
+        :param retries: number of tries to send request
         :param kwargs: optional parameters of request
             filters - dict of terms compatible with django database query
             offset - offset from which return a results
@@ -78,6 +79,7 @@ class Client(object):
         :param kwargs: optional parameters of request (dict)
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
+        :param retries: number of tries to send request
         :param **options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
             AsyncResult if async is True
@@ -100,6 +102,7 @@ class Client(object):
         :param kwargs: dict with named parameters of function
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
+        :param retries: number of tries to send request
         :param **options: optional parameter of apply_async
         :return: result of function call or AsyncResult if async is True
         :raise InvalidRequest: if data has non iterable type
@@ -133,7 +136,7 @@ class Client(object):
                 'Something goes wrong while getting results', e)
 
     def _send_request(self, task, args, kwargs, async=False, timeout=None,
-                      **options):
+                      retries=1, **options):
         """ Sending request to a server
 
         :param task: Celery task
@@ -141,6 +144,7 @@ class Client(object):
         :param kwargs: kwargs for apply_async
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
+        :param retries: number of tries to send request
         :param options: optional parameters for apply_async
         :return: results or AsyncResult if async is True or
             exception if something goes wrong
@@ -149,15 +153,21 @@ class Client(object):
         :raise Client.ResponseError: something goes wrong (if async=False)
 
         """
-        try:
-            r = task.apply_async(args=args, kwargs=kwargs, **options)
-        except Exception as e:
-            raise self.RequestError(
-                'Something goes wrong while sending request', e)
-        if async:
-            return r
-        else:
-            return self.get_result(r, timeout)
+        while True:
+            try:
+                try:
+                    r = task.apply_async(args=args, kwargs=kwargs, **options)
+                except Exception as e:
+                    raise self.RequestError(
+                        'Something goes wrong while sending request', e)
+                if async:
+                    return r
+                else:
+                    return self.get_result(r, timeout)
+            except Exception:
+                retries -= 1
+                if retries <= 0:
+                    raise
 
     @classmethod
     def _register_stub_tasks(cls, app):
