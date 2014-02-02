@@ -91,7 +91,56 @@ def filter(self, model, filters=None, offset=0,
     return self.serializer_class(instance=qs, many=True).data
 
 
-@rpc.task(name='celery_rpc.update', bind=True, base=ModelTask)
+class ModelChangeTask(ModelTask):
+    """ Abstract task provides ability to changing model state.
+    """
+    def get_instance(self, data):
+        """ Prepare instance (or several instances) to changes.
+
+        :param data: data for changing model
+        :return: (Model instance or queryset, many flag)
+        Many flag is True,
+
+        """
+        pk_name = self.pk_name
+        get_pk_value = lambda item: item.get('pk', item.get(pk_name))
+        if isinstance(data, dict):
+            try:
+                instance = self.default_queryset.get(pk=get_pk_value(data))
+            except self.model.DoesNotExist:
+                instance = None
+            many = False
+        else:
+            pk_values = [get_pk_value(item) for item in data]
+            instance = self.default_queryset.filter(pk__in=pk_values)
+            many = True
+        return instance, many
+
+    def perform_changes(self, instance, data, many, allow_add_remove=False):
+        """ Change model in accordance with params
+
+        :param instance: one or several instances of model
+        :param data: data for changing instances
+        :param many: True if more than one instances will be changed
+        :param allow_add_remove: True if need to create absent or delete missed
+            instances.
+        :return: serialized model data or list of one or errors
+
+        """
+
+        serializer = self.serializer_class(instance=instance, data=data,
+                                           many=many,
+                                           allow_add_remove=allow_add_remove)
+
+        if not serializer.errors:
+            serializer.save()
+            return serializer.data
+        else:
+            raise RestFrameworkError('Serializer errors happened',
+                                     serializer.errors)
+
+
+@rpc.task(name='celery_rpc.update', bind=True, base=ModelChangeTask)
 def update(self, model, data, fields=None, nocache=False,
            manager='objects', database=None, *args, **kwargs):
     """ Update Django models by PK and return new values.
@@ -102,23 +151,63 @@ def update(self, model, data, fields=None, nocache=False,
     :return: serialized model data or list of one or errors
 
     """
-    pk_name = self.pk_name
-    get_pk_value = lambda item: item.get('pk', item.get(pk_name))
-    if isinstance(data, dict):
-        instance = self.default_queryset.get(pk=get_pk_value(data))
-        many = False
-    else:
-        pk_values = [get_pk_value(item) for item in data]
-        instance = self.default_queryset.filter(pk__in=pk_values)
-        many = True
+    instance, many = self.get_instance(data)
+    return self.perform_changes(instance=instance, data=data, many=many,
+                                allow_add_remove=False)
 
-    serializer = self.serializer_class(instance=instance, data=data, many=many)
-    if not serializer.errors:
-        serializer.save()
-        return serializer.data
+
+@rpc.task(name='celery_rpc.update_or_create', bind=True, base=ModelChangeTask)
+def update_or_create(self, model, data, fields=None, nocache=False,
+                     manager='objects', database=None, *args, **kwargs):
+    """ Update Django models by PK or create new and return new values.
+
+    :param model: full name of model class like 'app.models:ModelClass'
+    :param data: values of one or several objects
+        {'id': 1, 'title': 'hello'} or [{'id': 1, 'title': 'hello'}]
+    :return: serialized model data or list of one or errors
+
+    """
+    instance, many = self.get_instance(data)
+    return self.perform_changes(instance=instance, data=data, many=many,
+                                allow_add_remove=many)
+
+
+@rpc.task(name='celery_rpc.create', bind=True, base=ModelChangeTask)
+def create(self, model, data, fields=None, nocache=False,
+           manager='objects', database=None, *args, **kwargs):
+    """ Update Django models by PK or create new and return new values.
+
+    :param model: full name of model class like 'app.models:ModelClass'
+    :param data: values of one or several objects
+        {'id': 1, 'title': 'hello'} or [{'id': 1, 'title': 'hello'}]
+    :return: serialized model data or list of one or errors
+
+    """
+    instance, many = (None, False if isinstance(data, dict) else True)
+    return self.perform_changes(instance=instance, data=data, many=many,
+                                allow_add_remove=many)
+
+
+@rpc.task(name='celery_rpc.delete', bind=True, base=ModelChangeTask)
+def delete(self, model, data, fields=None, nocache=False,
+           manager='objects', database=None, *args, **kwargs):
+    """ Delete Django models by PK.
+
+    :param model: full name of model class like 'app.models:ModelClass'
+    :param data: values of one or several objects
+        {'id': 1, 'title': 'hello'} or [{'id': 1, 'title': 'hello'}]
+    :return: None or [] if many
+
+    """
+    instance, many = self.get_instance(data)
+    if not many:
+        try:
+            instance.delete()
+        except Exception as e:
+            raise RestFrameworkError('Could not delete instance', e)
     else:
-        raise RestFrameworkError('Serializer errors happened',
-                                 serializer.errors)
+        return self.perform_changes(instance=instance, data=[], many=many,
+                                    allow_add_remove=many)
 
 
 class FunctionTask(Task):

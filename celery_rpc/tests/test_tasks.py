@@ -46,10 +46,12 @@ class FilterTaskTests(BaseTaskTests):
 
 class UpdateTaskTests(BaseTaskTests):
 
+    task = tasks.update
+
     def testUpdateOne(self):
         expected = get_model_dict(self.models[0])
         expected.update(char=str(uuid4()))
-        r = tasks.update.delay(self.MODEL_SYMBOL, expected)
+        r = self.task.delay(self.MODEL_SYMBOL, expected)
         self.assertEquals(expected, r.get())
 
         updated = get_model_dict(SimpleModel.objects.get(pk=expected['id']))
@@ -59,13 +61,63 @@ class UpdateTaskTests(BaseTaskTests):
         expected = [get_model_dict(e) for e in self.models[0:2]]
         for e in expected:
             e.update(char=str(uuid4()))
-        r = tasks.update.delay(self.MODEL_SYMBOL, expected)
+        r = self.task.delay(self.MODEL_SYMBOL, expected)
         result = r.get()
         self.assertEquals(2, len(result))
         self.assertEquals(expected, result)
 
         updated = [get_model_dict(o) for o in SimpleModel.objects.all()[0:2]]
         self.assertEquals(expected, updated)
+
+
+class CreateTaskTests(BaseTaskTests):
+
+    task = tasks.create
+
+    def testCreateOne(self):
+        expected = str(uuid4())
+        self.assertEquals(0, SimpleModel.objects.filter(char=expected).count())
+
+        r = self.task.delay(self.MODEL_SYMBOL, {'char': expected})
+
+        self.assertEquals(expected, r.get()['char'])
+        self.assertEquals(1, SimpleModel.objects.filter(char=expected).count())
+
+    def testCreateMany(self):
+        uuids = str(uuid4()), str(uuid4())
+        expected = [{'char': v} for v in uuids]
+        self.assertEquals(0, SimpleModel.objects.filter(char__in=uuids).count())
+
+        r = self.task.delay(self.MODEL_SYMBOL, expected)
+
+        self.assertEquals(expected, [{'char': i['char']} for i in r.get()])
+        self.assertEquals(2, SimpleModel.objects.filter(char__in=uuids).count())
+
+
+class UpdateOrCreateTaskTests(UpdateTaskTests, CreateTaskTests):
+
+    task = tasks.update_or_create
+
+
+class DeleteTaskTests(BaseTaskTests):
+
+    def testDeleteOne(self):
+        expected = get_model_dict(self.models[0])
+
+        r = tasks.delete.delay(self.MODEL_SYMBOL, expected)
+
+        self.assertEquals(None, r.get())
+        self.assertEquals(0, SimpleModel.objects.filter(id=expected['id']).count())
+
+    def testDeleteMany(self):
+        expected = (get_model_dict(self.models[0]),
+                    get_model_dict(self.models[1]))
+
+        r = tasks.delete.delay(self.MODEL_SYMBOL, expected)
+
+        self.assertEquals([], r.get())
+        ids = [v['id'] for v in expected]
+        self.assertEquals(0, SimpleModel.objects.filter(id__in=ids).count())
 
 
 def plus(a, b):
