@@ -33,6 +33,9 @@ class Client(object):
 
     FILTER_TASK_NAME = 'celery_rpc.filter'
     UPDATE_TASK_NAME = 'celery_rpc.update'
+    UPDATE_OR_CREATE_TASK_NAME = 'celery_rpc.update_or_create'
+    CREATE_TASK_NAME = 'celery_rpc.create'
+    DELETE_TASK_NAME = 'celery_rpc.delete'
     CALL_TASK_NAME = 'celery_rpc.call'
 
     TASK_NAMES = (FILTER_TASK_NAME, UPDATE_TASK_NAME, CALL_TASK_NAME, )
@@ -90,6 +93,75 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         task = self._task_stubs[self.UPDATE_TASK_NAME]
+        return self._send_request(task, args, kwargs, async, timeout,
+                                  **options)
+
+    def update_or_create(self, model, data, kwargs=None, async=False,
+                         timeout=None, **options):
+        """ Call update Django model objects on server. If there is not for some
+        data, then a new object will be created.
+
+        :param model: full name of model symbol like 'package.module:Class'
+        :param data: dict with new data or list of them
+        :param kwargs: optional parameters of request (dict)
+        :param async: enables delayed collecting of result
+        :param timeout: timeout of waiting for results
+        :param retries: number of tries to send request
+        :param **options: optional parameter of apply_async
+        :return: dict with updated state of model or list of them or
+            AsyncResult if async is True
+        :raise InvalidRequest: if data has non iterable type
+
+        """
+        if not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        args = (model, data)
+        task = self._task_stubs[self.UPDATE_OR_CREATE_TASK_NAME]
+        return self._send_request(task, args, kwargs, async, timeout,
+                                  **options)
+
+    def create(self, model, data, kwargs=None, async=False, timeout=None,
+               **options):
+        """ Call create Django model objects on server.
+
+        :param model: full name of model symbol like 'package.module:Class'
+        :param data: dict with new data or list of them
+        :param kwargs: optional parameters of request (dict)
+        :param async: enables delayed collecting of result
+        :param timeout: timeout of waiting for results
+        :param retries: number of tries to send request
+        :param **options: optional parameter of apply_async
+        :return: dict with updated state of model or list of them or
+            AsyncResult if async is True
+        :raise InvalidRequest: if data has non iterable type
+
+        """
+        if not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        args = (model, data)
+        task = self._task_stubs[self.CREATE_TASK_NAME]
+        return self._send_request(task, args, kwargs, async, timeout,
+                                  **options)
+
+    def delete(self, model, data, kwargs=None, async=False, timeout=None,
+               **options):
+        """ Call delete Django model objects on server.
+
+        :param model: full name of model symbol like 'package.module:Class'
+        :param data: dict (or list with dicts), which can contains ID
+        :param kwargs: optional parameters of request (dict)
+        :param async: enables delayed collecting of result
+        :param timeout: timeout of waiting for results
+        :param retries: number of tries to send request
+        :param **options: optional parameter of apply_async
+        :return: None or [] if multiple delete or AsyncResult if async is True
+        :raise InvalidRequest: if data has non iterable type
+
+        """
+        if not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        args = (model, data)
+        task = self._task_stubs[self.DELETE_TASK_NAME]
         return self._send_request(task, args, kwargs, async, timeout,
                                   **options)
 
