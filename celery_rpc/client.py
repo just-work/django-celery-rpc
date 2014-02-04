@@ -52,7 +52,23 @@ class Client(object):
         self._app = create_celery_app(config=app_config)
         self._task_stubs = self._register_stub_tasks(self._app)
 
-    def filter(self, model, kwargs=None, async=False, timeout=None, **options):
+
+    def prepare_task(self, task_name, args, kwargs, **options):
+        """ Prepare subtask signature
+
+        :param task_name: task name like 'celery_rpc.filter' which exists
+            in `_task_stubs`
+        :param kwargs: optional parameters of request
+        :param args: optional parameters of request
+        :param **options: optional parameter of apply_async
+        :return: celery.canvas.Signature instance
+
+        """
+        task = self._task_stubs[task_name]
+        return task.subtask(args=args, kwargs=kwargs, **options)
+
+    def filter(self, model, retries=1, kwargs=None, async=False, timeout=None,
+               **options):
         """ Call filtering Django model objects on server
 
         :param model: full name of model symbol like 'package.module:Class'
@@ -68,13 +84,13 @@ class Client(object):
         :raise: see get_result()
 
         """
-        task = self._task_stubs[self.FILTER_TASK_NAME]
         args = (model, )
-        return self._send_request(task, args, kwargs, async, timeout,
-                                  **options)
+        subtask = self.prepare_task(self.FILTER_TASK_NAME, args, kwargs,
+                                    **options)
+        return self._send_request(subtask, async, timeout, retries)
 
     def update(self, model, data, kwargs=None, async=False, timeout=None,
-               **options):
+               retries=1, **options):
         """ Call update Django model objects on server
 
         :param model: full name of model symbol like 'package.module:Class'
@@ -92,12 +108,12 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        task = self._task_stubs[self.UPDATE_TASK_NAME]
-        return self._send_request(task, args, kwargs, async, timeout,
-                                  **options)
+        subtask = self.prepare_task(self.UPDATE_TASK_NAME, args, kwargs,
+                                    **options)
+        return self._send_request(subtask, async, timeout, retries)
 
     def update_or_create(self, model, data, kwargs=None, async=False,
-                         timeout=None, **options):
+                         timeout=None, retries=1, **options):
         """ Call update Django model objects on server. If there is not for some
         data, then a new object will be created.
 
@@ -116,12 +132,12 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        task = self._task_stubs[self.UPDATE_OR_CREATE_TASK_NAME]
-        return self._send_request(task, args, kwargs, async, timeout,
-                                  **options)
+        subtask = self.prepare_task(self.UPDATE_OR_CREATE_TASK_NAME, args,
+                                    kwargs, **options)
+        return self._send_request(subtask, async, timeout, retries)
 
     def create(self, model, data, kwargs=None, async=False, timeout=None,
-               **options):
+               retries=1, **options):
         """ Call create Django model objects on server.
 
         :param model: full name of model symbol like 'package.module:Class'
@@ -139,12 +155,12 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        task = self._task_stubs[self.CREATE_TASK_NAME]
-        return self._send_request(task, args, kwargs, async, timeout,
-                                  **options)
+        subtask = self.prepare_task(self.CREATE_TASK_NAME, args,
+                                    kwargs, **options)
+        return self._send_request(subtask, async, timeout, retries)
 
     def delete(self, model, data, kwargs=None, async=False, timeout=None,
-               **options):
+               retries=1, **options):
         """ Call delete Django model objects on server.
 
         :param model: full name of model symbol like 'package.module:Class'
@@ -161,12 +177,12 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        task = self._task_stubs[self.DELETE_TASK_NAME]
-        return self._send_request(task, args, kwargs, async, timeout,
-                                  **options)
+        subtask = self.prepare_task(self.DELETE_TASK_NAME, args, kwargs,
+                                    **options)
+        return self._send_request(subtask, async, timeout, retries)
 
     def call(self, function, args=None, kwargs=None, async=False, timeout=None,
-             **options):
+             retries=1, **options):
         """ Call function on server
 
         :param function: full name of model symbol like 'package.module:Class'
@@ -180,9 +196,10 @@ class Client(object):
         :raise InvalidRequest: if data has non iterable type
 
         """
-        task = self._task_stubs[self.CALL_TASK_NAME]
         args = (function, args, kwargs)
-        return self._send_request(task, args, None, async, timeout, **options)
+        subtask = self.prepare_task(self.CALL_TASK_NAME, args, kwargs,
+                                    **options)
+        return self._send_request(subtask, async, timeout, retries)
 
     def get_result(self, async_result, timeout=None):
         """ Collect results from delayed result object
@@ -207,17 +224,13 @@ class Client(object):
             raise self.ResponseError(
                 'Something goes wrong while getting results', e)
 
-    def _send_request(self, task, args, kwargs, async=False, timeout=None,
-                      retries=1, **options):
+    def _send_request(self, subtask, async=False, timeout=None, retries=1):
         """ Sending request to a server
 
-        :param task: Celery task
-        :param args: args for apply_async
-        :param kwargs: kwargs for apply_async
+        :param subtask: Celery subtask
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
-        :param options: optional parameters for apply_async
         :return: results or AsyncResult if async is True or
             exception if something goes wrong
         :raise RestFrameworkError: error in the middle of Django REST
@@ -228,7 +241,7 @@ class Client(object):
         while True:
             try:
                 try:
-                    r = task.apply_async(args=args, kwargs=kwargs, **options)
+                    r = subtask.apply_async()
                 except Exception as e:
                     raise self.RequestError(
                         'Something goes wrong while sending request', e)
