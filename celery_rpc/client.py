@@ -224,10 +224,10 @@ class Client(object):
             raise self.ResponseError(
                 'Something goes wrong while getting results', e)
 
-    def _send_request(self, subtask, async=False, timeout=None, retries=1):
+    def _send_request(self, signature, async=False, timeout=None, retries=1):
         """ Sending request to a server
 
-        :param subtask: Celery subtask
+        :param signature: Celery signature instance
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
@@ -241,7 +241,7 @@ class Client(object):
         while True:
             try:
                 try:
-                    r = subtask.apply_async()
+                    r = signature.apply_async()
                 except Exception as e:
                     raise self.RequestError(
                         'Something goes wrong while sending request', e)
