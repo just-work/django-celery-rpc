@@ -116,7 +116,8 @@ class ModelChangeTask(ModelTask):
             many = True
         return instance, many
 
-    def perform_changes(self, instance, data, many, allow_add_remove=False):
+    def perform_changes(self, instance, data, many, allow_add_remove=False,
+                        partial=True):
         """ Change model in accordance with params
 
         :param instance: one or several instances of model
@@ -124,13 +125,15 @@ class ModelChangeTask(ModelTask):
         :param many: True if more than one instances will be changed
         :param allow_add_remove: True if need to create absent or delete missed
             instances.
+        :param partial: True if need partial update
         :return: serialized model data or list of one or errors
 
         """
 
         serializer = self.serializer_class(instance=instance, data=data,
                                            many=many,
-                                           allow_add_remove=allow_add_remove)
+                                           allow_add_remove=allow_add_remove,
+                                           partial=partial)
 
         if not serializer.errors:
             serializer.save()
