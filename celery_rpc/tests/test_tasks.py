@@ -69,6 +69,17 @@ class UpdateTaskTests(BaseTaskTests):
         updated = [get_model_dict(o) for o in SimpleModel.objects.all()[0:2]]
         self.assertEquals(expected, updated)
 
+    def testUpdatePartial(self):
+        char_val = str(uuid4())
+        expected = get_model_dict(self.models[0])
+        expected.update(char=char_val)
+        r = self.task.delay(self.MODEL_SYMBOL,
+                            {'char':char_val, 'id': expected['id']})
+        self.assertDictEqual(expected, r.get())
+
+        updated = get_model_dict(SimpleModel.objects.get(pk=expected['id']))
+        self.assertEquals(expected, updated)
+
 
 class CreateTaskTests(BaseTaskTests):
 
