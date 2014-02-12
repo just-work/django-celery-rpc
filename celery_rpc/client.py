@@ -197,7 +197,7 @@ class Client(object):
 
         """
         args = (function, args, kwargs)
-        subtask = self.prepare_task(self.CALL_TASK_NAME, args, kwargs,
+        subtask = self.prepare_task(self.CALL_TASK_NAME, args, None,
                                     **options)
         return self._send_request(subtask, async, timeout, retries)
 
