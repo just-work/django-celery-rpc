@@ -38,7 +38,9 @@ class Client(object):
     DELETE_TASK_NAME = 'celery_rpc.delete'
     CALL_TASK_NAME = 'celery_rpc.call'
 
-    TASK_NAMES = (FILTER_TASK_NAME, UPDATE_TASK_NAME, CALL_TASK_NAME, )
+    TASK_NAMES = (FILTER_TASK_NAME, UPDATE_TASK_NAME,
+                  UPDATE_OR_CREATE_TASK_NAME, CREATE_TASK_NAME,
+                  DELETE_TASK_NAME, CALL_TASK_NAME,)
 
     _app = None
     _task_stubs = None
