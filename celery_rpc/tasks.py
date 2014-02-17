@@ -94,6 +94,8 @@ def filter(self, model, filters=None, offset=0,
 class ModelChangeTask(ModelTask):
     """ Abstract task provides ability to changing model state.
     """
+    abstract = True
+
     def get_instance(self, data):
         """ Prepare instance (or several instances) to changes.
 
