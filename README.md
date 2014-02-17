@@ -29,56 +29,66 @@ Any Celery config params also permitted
 
 setting.py:
 
-	# minimal required configuration
-	CELERY_RPC_CONFIG = {
-		'BROKER_URL': amqp://10.9.200.1/,
-		'CELERY_RESULT_BACKEND': 'redis://10.9.200.2/0',
-	}
+```python
+# minimal required configuration
+CELERY_RPC_CONFIG = {
+	'BROKER_URL': amqp://10.9.200.1/,
+	'CELERY_RESULT_BACKEND': 'redis://10.9.200.2/0',
+}
+```
 
 ### server *eggs*
 
 setting.py:
 
-	# alternate request queue and routing key
-	CELERY_RPC_CONFIG = {
-		'BROKER_URL': amqp://10.9.200.1/,
-		'CELERY_RESULT_BACKEND': amqp://10.9.200.1/',
-		'CELERY_DEFAULT_QUEUE': 'celery_rpc.requests.alter_queue',
-        'CELERY_DEFAULT_ROUTING_KEY': 'celery_rpc.alter_routing_key'
-	}
+```python
+# alternate request queue and routing key
+CELERY_RPC_CONFIG = {
+	'BROKER_URL': amqp://10.9.200.1/,
+	'CELERY_RESULT_BACKEND': amqp://10.9.200.1/',
+	'CELERY_DEFAULT_QUEUE': 'celery_rpc.requests.alter_queue',
+	'CELERY_DEFAULT_ROUTING_KEY': 'celery_rpc.alter_routing_key'
+}
+```
 
 ### client
 
 setting.py:
 
-	# this settings will be used in clients by default
-	CELERY_RPC_CONFIG = {
-		'BROKER_URL': amqp://10.9.200.1/,
-		'CELERY_RESULT_BACKEND': 'redis://10.9.200.2/0',
-	}
+```python
+# this settings will be used in clients by default
+CELERY_RPC_CONFIG = {
+	'BROKER_URL': amqp://10.9.200.1/,
+	'CELERY_RESULT_BACKEND': 'redis://10.9.200.2/0',
+}
 
-	# 'eggs' alternative configuration will be explicitly passed to the client constructor
-	CELERY_RPC_EGGS_CLIENT = {
-		# BROKER_URL will be used by default from section above
-		'CELERY_RESULT_BACKEND': amqp://10.9.200.1/',
-		'CELERY_DEFAULT_QUEUE': 'celery_rpc.requests.alter_queue',
-        'CELERY_DEFAULT_ROUTING_KEY': 'celery_rpc.alter_routing_key'
-    }
+# 'eggs' alternative configuration will be explicitly passed to the client constructor
+CELERY_RPC_EGGS_CLIENT = {
+	# BROKER_URL will be used by default from section above
+	'CELERY_RESULT_BACKEND': amqp://10.9.200.1/',
+	'CELERY_DEFAULT_QUEUE': 'celery_rpc.requests.alter_queue',
+	'CELERY_DEFAULT_ROUTING_KEY': 'celery_rpc.alter_routing_key'
+}
+```
 
 example.py
 
-	from celery_rpc.client import Client
-	from django.conf import settings
+```python
+from celery_rpc.client import Client
+from django.conf import settings
 
-	# create client with default settings
-	span_client = Client()
+# create client with default settings
+span_client = Client()
 
-	# create client for `eggs` server
-	eggs_client = Client(CELERY_RPC_EGGS_CLIENT)
+# create client for `eggs` server
+eggs_client = Client(CELERY_RPC_EGGS_CLIENT)
+```
 
 ## Run server instance
 
-	celery worker -A celery_rpc.app
+```python
+celery worker -A celery_rpc.app
+```
 
 For daemonization see [Running the worker as a daemon](http://celery.readthedocs.org/en/latest/tutorials/daemonizing.html)
 
