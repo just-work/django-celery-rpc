@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import inspect
 
 from celery import Task
+from celery.utils.imports import symbol_by_name
 from kombu.utils import symbol_by_name
 from django.db.models.base import Model
 from rest_framework.serializers import ModelSerializer
@@ -68,15 +69,17 @@ class ModelTask(Task):
     def default_queryset(self):
         return self._create_queryset(self.model)
 
-    @property
-    def serializer_class(self):
-        return self._create_serializer_class(self.model)
+    def get_serializer_class(self, serializer_cls=None):
+        if not serializer_cls:
+            return self._create_serializer_class(self.model)
+        else:
+            return symbol_by_name(name=serializer_cls)
 
 
 @rpc.task(name='celery_rpc.filter', bind=True, base=ModelTask)
 def filter(self, model, filters=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None,  exclude=[],
-           depth=0, manager='objects', database=None, *args, **kwargs):
+           depth=0, manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model: full name of model class like 'app.models:Model'
@@ -88,7 +91,8 @@ def filter(self, model, filters=None, offset=0,
     """
     filters = filters if isinstance(filters, dict) else {}
     qs = self.default_queryset.filter(**filters)[offset:offset+limit]
-    return self.serializer_class(instance=qs, many=True).data
+    serializer_cls = self.get_serializer_class(serializer_cls)
+    return serializer_cls(instance=qs, many=True).data
 
 
 class ModelChangeTask(ModelTask):
@@ -119,7 +123,7 @@ class ModelChangeTask(ModelTask):
         return instance, many
 
     def perform_changes(self, instance, data, many, allow_add_remove=False,
-                        partial=True):
+                        partial=True, serializer_cls=None):
         """ Change model in accordance with params
 
         :param instance: one or several instances of model
@@ -131,8 +135,8 @@ class ModelChangeTask(ModelTask):
         :return: serialized model data or list of one or errors
 
         """
-
-        serializer = self.serializer_class(instance=instance, data=data,
+        serializer_cls = self.serializer_class(serializer_cls)
+        serializer = serializer_cls(instance=instance, data=data,
                                            many=many,
                                            allow_add_remove=allow_add_remove,
                                            partial=partial)
@@ -147,7 +151,7 @@ class ModelChangeTask(ModelTask):
 
 @rpc.task(name='celery_rpc.update', bind=True, base=ModelChangeTask)
 def update(self, model, data, fields=None, nocache=False,
-           manager='objects', database=None, *args, **kwargs):
+           manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Update Django models by PK and return new values.
 
     :param model: full name of model class like 'app.models:ModelClass'
@@ -158,12 +162,12 @@ def update(self, model, data, fields=None, nocache=False,
     """
     instance, many = self.get_instance(data)
     return self.perform_changes(instance=instance, data=data, many=many,
-                                allow_add_remove=False)
+                                allow_add_remove=False, serializer_cls=serializer_cls)
 
 
 @rpc.task(name='celery_rpc.update_or_create', bind=True, base=ModelChangeTask)
 def update_or_create(self, model, data, fields=None, nocache=False,
-                     manager='objects', database=None, *args, **kwargs):
+                     manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Update Django models by PK or create new and return new values.
 
     :param model: full name of model class like 'app.models:ModelClass'
@@ -174,12 +178,12 @@ def update_or_create(self, model, data, fields=None, nocache=False,
     """
     instance, many = self.get_instance(data)
     return self.perform_changes(instance=instance, data=data, many=many,
-                                allow_add_remove=many)
+                                allow_add_remove=many, serializer_cls=serializer_cls)
 
 
 @rpc.task(name='celery_rpc.create', bind=True, base=ModelChangeTask)
 def create(self, model, data, fields=None, nocache=False,
-           manager='objects', database=None, *args, **kwargs):
+           manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Update Django models by PK or create new and return new values.
 
     :param model: full name of model class like 'app.models:ModelClass'
@@ -190,12 +194,12 @@ def create(self, model, data, fields=None, nocache=False,
     """
     instance, many = (None, False if isinstance(data, dict) else True)
     return self.perform_changes(instance=instance, data=data, many=many,
-                                allow_add_remove=many)
+                                allow_add_remove=many, serializer_cls=serializer_cls)
 
 
 @rpc.task(name='celery_rpc.delete', bind=True, base=ModelChangeTask)
 def delete(self, model, data, fields=None, nocache=False,
-           manager='objects', database=None, *args, **kwargs):
+           manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Delete Django models by PK.
 
     :param model: full name of model class like 'app.models:ModelClass'
@@ -212,7 +216,7 @@ def delete(self, model, data, fields=None, nocache=False,
             raise RestFrameworkError('Could not delete instance', e)
     else:
         return self.perform_changes(instance=instance, data=[], many=many,
-                                    allow_add_remove=many)
+                                    allow_add_remove=many, serializer_cls=serializer_cls)
 
 
 class FunctionTask(Task):
