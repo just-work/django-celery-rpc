@@ -135,7 +135,7 @@ class ModelChangeTask(ModelTask):
         :return: serialized model data or list of one or errors
 
         """
-        serializer_cls = self.serializer_class(serializer_cls)
+        serializer_cls = self.get_serializer_class(serializer_cls)
         serializer = serializer_cls(instance=instance, data=data,
                                            many=many,
                                            allow_add_remove=allow_add_remove,
