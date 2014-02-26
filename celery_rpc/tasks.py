@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import inspect
 
 from celery import Task
-from celery.utils.imports import symbol_by_name
 from kombu.utils import symbol_by_name
 from django.db.models.base import Model
 from rest_framework.serializers import ModelSerializer
@@ -44,7 +43,11 @@ class ModelTask(Task):
     def _create_serializer_class(self, model_class):
         """ Return REST framework serializer class for model.
         """
-        class GenericModelSerializer(ModelSerializer):
+        base_serializer_class = ModelSerializer
+        if self.request.kwargs.get('serializer_cls'):
+            base_serializer_class = symbol_by_name(self.request.kwargs.get('serializer_cls'))
+
+        class GenericModelSerializer(base_serializer_class):
             class Meta:
                 model = model_class
 
@@ -58,6 +61,10 @@ class ModelTask(Task):
         return GenericModelSerializer
 
     @property
+    def serializer_class(self, serializer_cls=None):
+        return self._create_serializer_class(self.model)
+
+    @property
     def model(self):
         return self.request.model
 
@@ -68,12 +75,6 @@ class ModelTask(Task):
     @property
     def default_queryset(self):
         return self._create_queryset(self.model)
-
-    def get_serializer_class(self, serializer_cls=None):
-        if not serializer_cls:
-            return self._create_serializer_class(self.model)
-        else:
-            return symbol_by_name(name=serializer_cls)
 
 
 @rpc.task(name='celery_rpc.filter', bind=True, base=ModelTask)
@@ -91,8 +92,7 @@ def filter(self, model, filters=None, offset=0,
     """
     filters = filters if isinstance(filters, dict) else {}
     qs = self.default_queryset.filter(**filters)[offset:offset+limit]
-    serializer_cls = self.get_serializer_class(serializer_cls)
-    return serializer_cls(instance=qs, many=True).data
+    return self.serializer_class(instance=qs, many=True).data
 
 
 class ModelChangeTask(ModelTask):
@@ -135,8 +135,8 @@ class ModelChangeTask(ModelTask):
         :return: serialized model data or list of one or errors
 
         """
-        serializer_cls = self.get_serializer_class(serializer_cls)
-        serializer = serializer_cls(instance=instance, data=data,
+
+        serializer = self.serializer_class(instance=instance, data=data,
                                            many=many,
                                            allow_add_remove=allow_add_remove,
                                            partial=partial)
