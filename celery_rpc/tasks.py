@@ -4,6 +4,8 @@ import inspect
 
 from celery import Task
 from kombu.utils import symbol_by_name
+import django
+from django.db import router, transaction
 from django.db.models.base import Model
 from rest_framework.serializers import ModelSerializer
 
@@ -96,25 +98,29 @@ class ModelChangeTask(ModelTask):
     """
     abstract = True
 
-    def get_instance(self, data):
+    def get_instance(self, data, using=None):
         """ Prepare instance (or several instances) to changes.
 
         :param data: data for changing model
+        :param using: send query to specified DB alias
         :return: (Model instance or queryset, many flag)
-        Many flag is True,
+            Many flag is True if queryset is returned.
 
         """
         pk_name = self.pk_name
         get_pk_value = lambda item: item.get('pk', item.get(pk_name))
+        qs = self.default_queryset
+        if using:
+            qs.using(using)
         if isinstance(data, dict):
             try:
-                instance = self.default_queryset.get(pk=get_pk_value(data))
+                instance = qs.get(pk=get_pk_value(data))
             except self.model.DoesNotExist:
                 instance = None
             many = False
         else:
             pk_values = [get_pk_value(item) for item in data]
-            instance = self.default_queryset.filter(pk__in=pk_values)
+            instance = qs.filter(pk__in=pk_values)
             many = True
         return instance, many
 
@@ -161,6 +167,19 @@ def update(self, model, data, fields=None, nocache=False,
                                 allow_add_remove=False)
 
 
+def atomic_commit_on_success(using=None):
+    """ Provides context manager for atomic database operations depending on
+    Django version.
+    """
+    ver = django.VERSION
+    if ver[0] == 1 and ver[1] < 6:
+        return transaction.commit_on_success(using=using)
+    elif ver[0] == 1 and ver >= 6:
+        return transaction.atomic(using=using)
+    else:
+        raise RuntimeError('Invalid Django version: {}'.format(ver))
+
+
 @rpc.task(name=utils.GETSET_TASK_NAME, bind=True, base=ModelChangeTask)
 def getset(self, model, data, fields=None, nocache=False,
            manager='objects', database=None, *args, **kwargs):
@@ -172,21 +191,21 @@ def getset(self, model, data, fields=None, nocache=False,
     :return: serialized model data or list of one or errors
 
     """
-    # TODO read from DB for write
-    # TODO transaction or atomic (Dj>=1.7)
-    instance, many = self.get_instance(data)
-    serializer = self.serializer_class(instance=instance, data=data,
-                                       many=many, allow_add_remove=False,
-                                       partial=True)
+    db_for_write = router.db_for_write(self.model)
+    with atomic_commit_on_success(using=db_for_write):
+        instance, many = self.get_instance(data, using=db_for_write)
+        serializer = self.serializer_class(instance=instance, data=data,
+                                           many=many, allow_add_remove=False,
+                                           partial=True)
 
-    old_values = serializer.data
+        old_values = serializer.data
 
-    if not serializer.errors:
-        serializer.save()
-        return old_values
-    else:
-        raise RestFrameworkError('Serializer errors happened',
-                                 serializer.errors)
+        if not serializer.errors:
+            serializer.save()
+            return old_values
+        else:
+            raise RestFrameworkError('Serializer errors happened',
+                                     serializer.errors)
 
 
 @rpc.task(name=utils.UPDATE_OR_CREATE_TASK_NAME, bind=True, base=ModelChangeTask)

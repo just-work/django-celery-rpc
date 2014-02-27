@@ -16,6 +16,7 @@ Client and server are designed to:
  - filter models with Django ORM lookups;
  - change model state (create, update, update or create, delete);
  - change model state in bulk mode (more than one object per request);
+ - atomic get-set model state with bulk mode support;
  - call function;
 
 ## Configure
