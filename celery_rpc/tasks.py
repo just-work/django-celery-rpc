@@ -35,6 +35,16 @@ class ModelTask(Task):
             "Symbol '{}' is not a Django model".format(model_name))
 
     @staticmethod
+    def _import_serializer(serializer_name):
+        """ Import class by full name, check type and return.
+        """
+        sym = symbol_by_name(serializer_name)
+        if inspect.isclass(sym) and issubclass(sym, ModelSerializer):
+            return sym
+        raise TypeError(
+            "Symbol '{}' is not a DRF serializer".format(serializer_name))
+
+    @staticmethod
     def _create_queryset(model):
         """ Construct queryset by params.
         """
@@ -43,9 +53,14 @@ class ModelTask(Task):
     def _create_serializer_class(self, model_class):
         """ Return REST framework serializer class for model.
         """
+
+        # default serializer
         base_serializer_class = ModelSerializer
-        if self.request.kwargs.get('serializer_cls'):
-            base_serializer_class = symbol_by_name(self.request.kwargs.get('serializer_cls'))
+
+        # custom serializer
+        custom_serializer = self.request.kwargs.get('serializer_cls')
+        if custom_serializer:
+            base_serializer_class = self._import_serializer(custom_serializer)
 
         class GenericModelSerializer(base_serializer_class):
             class Meta:
@@ -61,7 +76,7 @@ class ModelTask(Task):
         return GenericModelSerializer
 
     @property
-    def serializer_class(self, serializer_cls=None):
+    def serializer_class(self):
         return self._create_serializer_class(self.model)
 
     @property
