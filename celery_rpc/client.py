@@ -2,9 +2,9 @@ from __future__ import absolute_import
 
 from celery.exceptions import TimeoutError
 
+from . import utils
 from .config import GET_RESULT_TIMEOUT
 from .exceptions import RestFrameworkError
-from .utils import create_celery_app
 
 
 class Client(object):
@@ -31,17 +31,6 @@ class Client(object):
         """ Timeout while getting result
         """
 
-    FILTER_TASK_NAME = 'celery_rpc.filter'
-    UPDATE_TASK_NAME = 'celery_rpc.update'
-    UPDATE_OR_CREATE_TASK_NAME = 'celery_rpc.update_or_create'
-    CREATE_TASK_NAME = 'celery_rpc.create'
-    DELETE_TASK_NAME = 'celery_rpc.delete'
-    CALL_TASK_NAME = 'celery_rpc.call'
-
-    TASK_NAMES = (FILTER_TASK_NAME, UPDATE_TASK_NAME,
-                  UPDATE_OR_CREATE_TASK_NAME, CREATE_TASK_NAME,
-                  DELETE_TASK_NAME, CALL_TASK_NAME,)
-
     _app = None
     _task_stubs = None
 
@@ -51,9 +40,8 @@ class Client(object):
         :param app_config: alternative configuration parameters for Celery app.
 
         """
-        self._app = create_celery_app(config=app_config)
+        self._app = utils.create_celery_app(config=app_config)
         self._task_stubs = self._register_stub_tasks(self._app)
-
 
     def prepare_task(self, task_name, args, kwargs, **options):
         """ Prepare subtask signature
@@ -87,7 +75,7 @@ class Client(object):
 
         """
         args = (model, )
-        subtask = self.prepare_task(self.FILTER_TASK_NAME, args, kwargs,
+        subtask = self.prepare_task(utils.FILTER_TASK_NAME, args, kwargs,
                                     **options)
         return self._send_request(subtask, async, timeout, retries)
 
@@ -110,7 +98,30 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        subtask = self.prepare_task(self.UPDATE_TASK_NAME, args, kwargs,
+        subtask = self.prepare_task(utils.UPDATE_TASK_NAME, args, kwargs,
+                                    **options)
+        return self._send_request(subtask, async, timeout, retries)
+
+    def getset(self, model, data, kwargs=None, async=False, timeout=None,
+               retries=1, **options):
+        """ Call update Django model objects on server and return previous state
+
+        :param model: full name of model symbol like 'package.module:Class'
+        :param data: dict with new data or list of them
+        :param kwargs: optional parameters of request (dict)
+        :param async: enables delayed collecting of result
+        :param timeout: timeout of waiting for results
+        :param retries: number of tries to send request
+        :param **options: optional parameter of apply_async
+        :return: dict with old state of model or list of them or
+            AsyncResult if async is True
+        :raise InvalidRequest: if data has non iterable type
+
+        """
+        if not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        args = (model, data)
+        subtask = self.prepare_task(utils.GETSET_TASK_NAME, args, kwargs,
                                     **options)
         return self._send_request(subtask, async, timeout, retries)
 
@@ -134,7 +145,7 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        subtask = self.prepare_task(self.UPDATE_OR_CREATE_TASK_NAME, args,
+        subtask = self.prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME, args,
                                     kwargs, **options)
         return self._send_request(subtask, async, timeout, retries)
 
@@ -157,7 +168,7 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        subtask = self.prepare_task(self.CREATE_TASK_NAME, args,
+        subtask = self.prepare_task(utils.CREATE_TASK_NAME, args,
                                     kwargs, **options)
         return self._send_request(subtask, async, timeout, retries)
 
@@ -179,7 +190,7 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        subtask = self.prepare_task(self.DELETE_TASK_NAME, args, kwargs,
+        subtask = self.prepare_task(utils.DELETE_TASK_NAME, args, kwargs,
                                     **options)
         return self._send_request(subtask, async, timeout, retries)
 
@@ -199,7 +210,7 @@ class Client(object):
 
         """
         args = (function, args, kwargs)
-        subtask = self.prepare_task(self.CALL_TASK_NAME, args, None,
+        subtask = self.prepare_task(utils.CALL_TASK_NAME, args, None,
                                     **options)
         return self._send_request(subtask, async, timeout, retries)
 
@@ -265,7 +276,7 @@ class Client(object):
 
         """
         tasks = {}
-        for name in cls.TASK_NAMES:
+        for name in utils.TASK_NAMES:
             @app.task(bind=True, name=name)
             def task_stub(*args, **kwargs):
                 pass

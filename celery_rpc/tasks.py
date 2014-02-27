@@ -7,7 +7,7 @@ from kombu.utils import symbol_by_name
 from django.db.models.base import Model
 from rest_framework.serializers import ModelSerializer
 
-from . import config
+from . import config, utils
 from .app import rpc
 from .exceptions import RestFrameworkError
 
@@ -73,7 +73,7 @@ class ModelTask(Task):
         return self._create_serializer_class(self.model)
 
 
-@rpc.task(name='celery_rpc.filter', bind=True, base=ModelTask)
+@rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=ModelTask)
 def filter(self, model, filters=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None,  exclude=[],
            depth=0, manager='objects', database=None, *args, **kwargs):
@@ -145,7 +145,7 @@ class ModelChangeTask(ModelTask):
                                      serializer.errors)
 
 
-@rpc.task(name='celery_rpc.update', bind=True, base=ModelChangeTask)
+@rpc.task(name=utils.UPDATE_TASK_NAME, bind=True, base=ModelChangeTask)
 def update(self, model, data, fields=None, nocache=False,
            manager='objects', database=None, *args, **kwargs):
     """ Update Django models by PK and return new values.
@@ -161,7 +161,35 @@ def update(self, model, data, fields=None, nocache=False,
                                 allow_add_remove=False)
 
 
-@rpc.task(name='celery_rpc.update_or_create', bind=True, base=ModelChangeTask)
+@rpc.task(name=utils.GETSET_TASK_NAME, bind=True, base=ModelChangeTask)
+def getset(self, model, data, fields=None, nocache=False,
+           manager='objects', database=None, *args, **kwargs):
+    """ Update Django models by PK and return old values as one atomic action.
+
+    :param model: full name of model class like 'app.models:ModelClass'
+    :param data: values of one or several objects
+        {'id': 1, 'title': 'hello'} or [{'id': 1, 'title': 'hello'}]
+    :return: serialized model data or list of one or errors
+
+    """
+    # TODO read from DB for write
+    # TODO transaction or atomic (Dj>=1.7)
+    instance, many = self.get_instance(data)
+    serializer = self.serializer_class(instance=instance, data=data,
+                                       many=many, allow_add_remove=False,
+                                       partial=True)
+
+    old_values = serializer.data
+
+    if not serializer.errors:
+        serializer.save()
+        return old_values
+    else:
+        raise RestFrameworkError('Serializer errors happened',
+                                 serializer.errors)
+
+
+@rpc.task(name=utils.UPDATE_OR_CREATE_TASK_NAME, bind=True, base=ModelChangeTask)
 def update_or_create(self, model, data, fields=None, nocache=False,
                      manager='objects', database=None, *args, **kwargs):
     """ Update Django models by PK or create new and return new values.
@@ -177,7 +205,7 @@ def update_or_create(self, model, data, fields=None, nocache=False,
                                 allow_add_remove=many)
 
 
-@rpc.task(name='celery_rpc.create', bind=True, base=ModelChangeTask)
+@rpc.task(name=utils.CREATE_TASK_NAME, bind=True, base=ModelChangeTask)
 def create(self, model, data, fields=None, nocache=False,
            manager='objects', database=None, *args, **kwargs):
     """ Update Django models by PK or create new and return new values.
@@ -193,7 +221,7 @@ def create(self, model, data, fields=None, nocache=False,
                                 allow_add_remove=many)
 
 
-@rpc.task(name='celery_rpc.delete', bind=True, base=ModelChangeTask)
+@rpc.task(name=utils.DELETE_TASK_NAME, bind=True, base=ModelChangeTask)
 def delete(self, model, data, fields=None, nocache=False,
            manager='objects', database=None, *args, **kwargs):
     """ Delete Django models by PK.
@@ -240,7 +268,8 @@ class FunctionTask(Task):
     def function(self):
         return self.request.function
 
-@rpc.task(name='celery_rpc.call', bind=True, base=FunctionTask)
+
+@rpc.task(name=utils.CALL_TASK_NAME, bind=True, base=FunctionTask)
 def call(self, function, args, kwargs):
     """ Call function with args & kwargs
 

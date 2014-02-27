@@ -81,6 +81,34 @@ class UpdateTaskTests(BaseTaskTests):
         self.assertEquals(expected, updated)
 
 
+class GetSetTaskTests(BaseTaskTests):
+
+    task = tasks.getset
+
+    def testGetSetOne(self):
+        new = get_model_dict(self.models[0])
+        new.update(char=str(uuid4()))
+        r = self.task.delay(self.MODEL_SYMBOL, new)
+        old = get_model_dict(self.models[0])
+        self.assertEquals(old, r.get())
+
+        updated = get_model_dict(SimpleModel.objects.get(pk=old['id']))
+        self.assertEquals(new, updated)
+
+    def testGetSetMulti(self):
+        new = [get_model_dict(e) for e in self.models[0:2]]
+        for e in new:
+            e.update(char=str(uuid4()))
+        r = self.task.delay(self.MODEL_SYMBOL, new)
+        result = r.get()
+        self.assertEquals(2, len(result))
+        old = [get_model_dict(e) for e in self.models[0:2]]
+        self.assertEquals(old, result)
+
+        updated = [get_model_dict(o) for o in SimpleModel.objects.all()[0:2]]
+        self.assertEquals(new, updated)
+
+
 class CreateTaskTests(BaseTaskTests):
 
     task = tasks.create
