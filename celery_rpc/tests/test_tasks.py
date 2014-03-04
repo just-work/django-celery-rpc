@@ -6,6 +6,7 @@ from autofixture import AutoFixture
 from django.test import TestCase
 
 from .. import tasks
+from .serializers import SimpleTaskSerializer
 from .models import SimpleModel
 
 
@@ -79,6 +80,42 @@ class UpdateTaskTests(BaseTaskTests):
 
         updated = get_model_dict(SimpleModel.objects.get(pk=expected['id']))
         self.assertEquals(expected, updated)
+
+    def testSerializer(self):
+        """
+        Test serializer_cls
+        """
+        char_val = str(uuid4())
+        expected = get_model_dict(self.models[0])
+        expected.update(char=char_val)
+
+        r = self.task.delay(self.MODEL_SYMBOL,
+                            {'char':char_val, 'id': expected['id']},
+                            **{'serializer_cls': 'celery_rpc.tests.serializers:SimpleTaskSerializer'})
+        self.assertDictEqual({'id': expected['id']}, r.get())
+
+    def testNoExistSerializer(self):
+        """
+        Test not existing serializer
+        """
+        char_val = str(uuid4())
+        expected = get_model_dict(self.models[0])
+
+        with self.assertRaises(ImportError):
+            self.task.delay(self.MODEL_SYMBOL, {'char': char_val, 'id': expected['id']},
+                            **{'serializer_cls': 'Trololo'}).get()
+
+    def testNoValidSerializer(self):
+        """
+        Test not valid serializer
+        """
+        char_val = str(uuid4())
+        expected = get_model_dict(self.models[0])
+
+        with self.assertRaises(TypeError):
+            self.task.delay(self.MODEL_SYMBOL, {'char': char_val, 'id': expected['id']},
+                        **{'serializer_cls': 'celery_rpc.tests.models:SimpleModel'}).get()
+
 
 
 class GetSetTaskTests(BaseTaskTests):

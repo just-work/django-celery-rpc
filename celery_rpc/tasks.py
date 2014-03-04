@@ -37,6 +37,16 @@ class ModelTask(Task):
             "Symbol '{}' is not a Django model".format(model_name))
 
     @staticmethod
+    def _import_serializer(serializer_name):
+        """ Import class by full name, check type and return.
+        """
+        sym = symbol_by_name(serializer_name)
+        if inspect.isclass(sym) and issubclass(sym, ModelSerializer):
+            return sym
+        raise TypeError(
+            "Symbol '{}' is not a DRF serializer".format(serializer_name))
+
+    @staticmethod
     def _create_queryset(model):
         """ Construct queryset by params.
         """
@@ -45,8 +55,17 @@ class ModelTask(Task):
     def _create_serializer_class(self, model_class):
         """ Return REST framework serializer class for model.
         """
-        class GenericModelSerializer(ModelSerializer):
-            class Meta:
+
+        # default serializer
+        base_serializer_class = ModelSerializer
+
+        # custom serializer
+        custom_serializer = self.request.kwargs.get('serializer_cls')
+        if custom_serializer:
+            base_serializer_class = self._import_serializer(custom_serializer)
+
+        class GenericModelSerializer(base_serializer_class):
+            class Meta(base_serializer_class.Meta):
                 model = model_class
 
             def get_identity(self, data):
@@ -57,6 +76,10 @@ class ModelTask(Task):
                     return None
 
         return GenericModelSerializer
+
+    @property
+    def serializer_class(self):
+        return self._create_serializer_class(self.model)
 
     @property
     def model(self):
@@ -70,15 +93,11 @@ class ModelTask(Task):
     def default_queryset(self):
         return self._create_queryset(self.model)
 
-    @property
-    def serializer_class(self):
-        return self._create_serializer_class(self.model)
-
 
 @rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=ModelTask)
 def filter(self, model, filters=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None,  exclude=[],
-           depth=0, manager='objects', database=None, *args, **kwargs):
+           depth=0, manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model: full name of model class like 'app.models:Model'
@@ -125,7 +144,7 @@ class ModelChangeTask(ModelTask):
         return instance, many
 
     def perform_changes(self, instance, data, many, allow_add_remove=False,
-                        partial=True):
+                        partial=True, serializer_cls=None):
         """ Change model in accordance with params
 
         :param instance: one or several instances of model
@@ -137,7 +156,6 @@ class ModelChangeTask(ModelTask):
         :return: serialized model data or list of one or errors
 
         """
-
         serializer = self.serializer_class(instance=instance, data=data,
                                            many=many,
                                            allow_add_remove=allow_add_remove,
@@ -153,7 +171,7 @@ class ModelChangeTask(ModelTask):
 
 @rpc.task(name=utils.UPDATE_TASK_NAME, bind=True, base=ModelChangeTask)
 def update(self, model, data, fields=None, nocache=False,
-           manager='objects', database=None, *args, **kwargs):
+           manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Update Django models by PK and return new values.
 
     :param model: full name of model class like 'app.models:ModelClass'
@@ -164,7 +182,7 @@ def update(self, model, data, fields=None, nocache=False,
     """
     instance, many = self.get_instance(data)
     return self.perform_changes(instance=instance, data=data, many=many,
-                                allow_add_remove=False)
+                                allow_add_remove=False, serializer_cls=serializer_cls)
 
 
 def atomic_commit_on_success(using=None):
@@ -210,7 +228,7 @@ def getset(self, model, data, fields=None, nocache=False,
 
 @rpc.task(name=utils.UPDATE_OR_CREATE_TASK_NAME, bind=True, base=ModelChangeTask)
 def update_or_create(self, model, data, fields=None, nocache=False,
-                     manager='objects', database=None, *args, **kwargs):
+                     manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Update Django models by PK or create new and return new values.
 
     :param model: full name of model class like 'app.models:ModelClass'
@@ -221,12 +239,12 @@ def update_or_create(self, model, data, fields=None, nocache=False,
     """
     instance, many = self.get_instance(data)
     return self.perform_changes(instance=instance, data=data, many=many,
-                                allow_add_remove=many)
+                                allow_add_remove=many, serializer_cls=serializer_cls)
 
 
 @rpc.task(name=utils.CREATE_TASK_NAME, bind=True, base=ModelChangeTask)
 def create(self, model, data, fields=None, nocache=False,
-           manager='objects', database=None, *args, **kwargs):
+           manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Update Django models by PK or create new and return new values.
 
     :param model: full name of model class like 'app.models:ModelClass'
@@ -237,12 +255,12 @@ def create(self, model, data, fields=None, nocache=False,
     """
     instance, many = (None, False if isinstance(data, dict) else True)
     return self.perform_changes(instance=instance, data=data, many=many,
-                                allow_add_remove=many)
+                                allow_add_remove=many, serializer_cls=serializer_cls)
 
 
 @rpc.task(name=utils.DELETE_TASK_NAME, bind=True, base=ModelChangeTask)
 def delete(self, model, data, fields=None, nocache=False,
-           manager='objects', database=None, *args, **kwargs):
+           manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Delete Django models by PK.
 
     :param model: full name of model class like 'app.models:ModelClass'
@@ -259,7 +277,7 @@ def delete(self, model, data, fields=None, nocache=False,
             raise RestFrameworkError('Could not delete instance', e)
     else:
         return self.perform_changes(instance=instance, data=[], many=many,
-                                    allow_add_remove=many)
+                                    allow_add_remove=many, serializer_cls=serializer_cls)
 
 
 class FunctionTask(Task):
