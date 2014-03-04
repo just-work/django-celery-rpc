@@ -8,3 +8,5 @@ class SimpleTaskSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = SimpleModel
+        fields = ('id', )
+

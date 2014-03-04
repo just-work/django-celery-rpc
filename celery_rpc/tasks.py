@@ -63,7 +63,7 @@ class ModelTask(Task):
             base_serializer_class = self._import_serializer(custom_serializer)
 
         class GenericModelSerializer(base_serializer_class):
-            class Meta:
+            class Meta(base_serializer_class.Meta):
                 model = model_class
 
             def get_identity(self, data):
@@ -150,7 +150,6 @@ class ModelChangeTask(ModelTask):
         :return: serialized model data or list of one or errors
 
         """
-
         serializer = self.serializer_class(instance=instance, data=data,
                                            many=many,
                                            allow_add_remove=allow_add_remove,
