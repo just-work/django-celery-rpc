@@ -93,8 +93,14 @@ celery worker -A celery_rpc.app
 
 For daemonization see [Running the worker as a daemon](http://celery.readthedocs.org/en/latest/tutorials/daemonizing.html)
 
+## Run tests
+
+```shell
+python django-celery-rpc/celery_rpc/runtests/runtests.py
+```
+
 ## TODO
 
  - Set default non-generic model serializer.
- - Send alternate model serializer in request.
  - Django-free mode for client and server.
+ - Token auth and permissions support (like DRF).

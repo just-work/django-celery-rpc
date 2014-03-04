@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='django-celery-rpc',
-    version='0.4',
+    version='0.5',
     packages=['celery_rpc'],
     url='https://github.com/ttyS15/django-celery-rpc',
     license='Public',
