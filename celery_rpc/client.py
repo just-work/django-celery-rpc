@@ -276,9 +276,13 @@ class Client(object):
 
         """
         tasks = {}
-        for name in utils.TASK_NAMES:
+        for name in utils.TASK_NAME_MAP.values():
             @app.task(bind=True, name=name)
             def task_stub(*args, **kwargs):
                 pass
             tasks[name] = task_stub
         return tasks
+
+# Copy task names into client class from utils
+for n, v in utils.TASK_NAME_MAP.items():
+    setattr(Client, n, v)

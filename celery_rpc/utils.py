@@ -18,6 +18,4 @@ CREATE_TASK_NAME = 'celery_rpc.create'
 DELETE_TASK_NAME = 'celery_rpc.delete'
 CALL_TASK_NAME = 'celery_rpc.call'
 
-TASK_NAMES = (FILTER_TASK_NAME, UPDATE_TASK_NAME, GETSET_TASK_NAME,
-              UPDATE_OR_CREATE_TASK_NAME, CREATE_TASK_NAME,
-              DELETE_TASK_NAME, CALL_TASK_NAME,)
+TASK_NAME_MAP = {n: v for n, v in locals().items() if n.endswith('_TASK_NAME')}
