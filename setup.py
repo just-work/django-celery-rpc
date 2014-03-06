@@ -28,6 +28,8 @@ setup(
     ],
     tests_require=[
         'django-nose>=0.1.3',
+        'django-autofixture==0.5.0',
+        'mock==1.0.1',
     ],
     test_suite='runtests.runtests',
     include_package_data=True,
