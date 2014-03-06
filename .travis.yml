@@ -1,0 +1,15 @@
+language: python
+
+python:
+  - "2.7"
+
+env:
+  - DJANGO=1.4
+  - DJANGO=1.5
+  - DJANGO=1.6
+
+install:
+  - pip install Django==$DJANGO --use-mirrors
+  - pip install -e . --use-mirrors
+
+script: python setup.py test
