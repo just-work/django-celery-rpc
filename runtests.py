@@ -9,7 +9,7 @@ if not settings.configured:
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': 'django_celery_rpc',
+                'NAME': ':memory:',
                 'USER': '',
                 'PASSWORD': '',
                 'HOST': '',
@@ -23,7 +23,11 @@ if not settings.configured:
             'celery_rpc.tests',
         ],
         ROOT_URLCONF='',
-        DEBUG=False,
+        DEBUG=True,
+
+        CELERY_RPC_CONFIG = {
+            'CELERY_ALWAYS_EAGER': True
+        },
     )
 
 
