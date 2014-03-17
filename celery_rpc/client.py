@@ -108,7 +108,7 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         subtask = self.prepare_task(utils.UPDATE_TASK_NAME, args, kwargs,
-                                    **options)
+                                    high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def getset(self, model, data, kwargs=None, async=False, timeout=None,
@@ -133,7 +133,7 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         subtask = self.prepare_task(utils.GETSET_TASK_NAME, args, kwargs,
-                                    **options)
+                                    high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def update_or_create(self, model, data, kwargs=None, async=False,
@@ -159,7 +159,7 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         subtask = self.prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME, args,
-                                    kwargs, **options)
+                                    kwargs, high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def create(self, model, data, kwargs=None, async=False, timeout=None,
@@ -184,7 +184,7 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         subtask = self.prepare_task(utils.CREATE_TASK_NAME, args,
-                                    kwargs, **options)
+                                    kwargs, high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def delete(self, model, data, kwargs=None, async=False, timeout=None,
@@ -208,7 +208,7 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         subtask = self.prepare_task(utils.DELETE_TASK_NAME, args, kwargs,
-                                    **options)
+                                    high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def call(self, function, args=None, kwargs=None, async=False, timeout=None,
@@ -230,7 +230,7 @@ class Client(object):
         """
         args = (function, args, kwargs)
         subtask = self.prepare_task(utils.CALL_TASK_NAME, args, None,
-                                    **options)
+                                    high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def get_result(self, async_result, timeout=None):
