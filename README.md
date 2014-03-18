@@ -8,7 +8,7 @@ Remote access from one system to models and functions of other one using Celery 
 Relies on three outstanding python projects:
 
  - [Celery](http://www.celeryproject.org/)
- - [Django Rest Framework](http://www.django-rest-framework.org/)
+ - [Django Rest Framework](http://www.djang)
  - [Django](https://www.djangoproject.com/)
 
 ## Main features
@@ -23,12 +23,12 @@ Client and server are designed to:
 
 ## Configure
 
-Default configuration of *django-celery-rpc* must be overridden in settings.py by *CELERY_RPC_CONFIG*.
-The *CELERY_RPC_CONFIG* is a dict which must contains at least two keys: *BROKER_URL* and *CELERY_RESULT_BACKEND*.
+Default configuration of **django-celery-rpc** must be overridden in settings.py by **CELERY_RPC_CONFIG**.
+The **CELERY_RPC_CONFIG** is a dict which must contains at least two keys: **BROKER_URL** and **CELERY_RESULT_BACKEND**.
 Any Celery config params also permitted
 (see [Configuration and defaults](http://celery.readthedocs.org/en/latest/configuration.html))
 
-### server *span*
+### server **span**
 
 setting.py:
 
@@ -40,7 +40,7 @@ CELERY_RPC_CONFIG = {
 }
 ```
 
-### server *eggs*
+### server **eggs**
 
 setting.py:
 
@@ -54,7 +54,7 @@ CELERY_RPC_CONFIG = {
 }
 ```
 
-### client
+### client/
 
 setting.py:
 
@@ -89,10 +89,10 @@ eggs_client = Client(CELERY_RPC_EGGS_CLIENT)
 
 ## Using client
 
-List of all MyModel objects with high_priority
+List of all MyModel objects with high priority
 
 ```
-span_client.filter('app.models:MyModel')
+span_client.filter('app.models:MyModel', high_priority=True)
 ```
 
 ## Run server instance
@@ -107,7 +107,7 @@ Server with support task consuming prioritization
 celery multi start 2 -A celery_rpc.app -Q:1 celery_rpc.requests.high_priority
 ```
 
-	Note, you must replace 'celery_rpc.request' with actual value of config param *CELERY_DEFAULT_QUEUE*.
+_Note, you must replace 'celery_rpc.request' with actual value of config param **CELERY_DEFAULT_QUEUE**._
 
 Command will start two instances. First instance will consume from high priority queue only. Second instance will serve both queues.
 
@@ -121,7 +121,7 @@ python django-celery-rpc/celery_rpc/runtests/runtests.py
 
 ## TODO
 
- - Shrink fields of result object for *filter* method.
+ - Shrink fields of result object for **filter** method.
  - Set default non-generic model serializer.
  - Django-free mode for client and server.
  - Token auth and permissions support (like DRF).
