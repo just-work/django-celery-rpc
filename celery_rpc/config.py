@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import json
 
 from django.conf import settings as _settings
-from kombu import Queue, Exchange
 from kombu.serialization import registry
 
 from .encoders import XJSONEncoder
@@ -45,12 +44,3 @@ locals().update(_CONFIG)
 CELERYD_TASK_SOFT_TIME_LIMIT = GET_RESULT_TIMEOUT + 1
 CELERYD_TASK_TIME_LIMIT = GET_RESULT_TIMEOUT * 2
 
-CELERY_HIGH_PRIORITY_QUEUE = CELERY_DEFAULT_QUEUE + '.high_priority'
-CELERY_HIGH_PRIORITY_ROUTING_KEY = CELERY_DEFAULT_ROUTING_KEY + '.high_priority'
-
-CELERY_QUEUES = (
-    Queue(CELERY_DEFAULT_QUEUE, Exchange(CELERY_DEFAULT_EXCHANGE),
-          CELERY_DEFAULT_ROUTING_KEY),
-    Queue(CELERY_HIGH_PRIORITY_QUEUE, Exchange(CELERY_DEFAULT_EXCHANGE),
-          CELERY_HIGH_PRIORITY_ROUTING_KEY),
-)

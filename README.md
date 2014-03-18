@@ -74,6 +74,10 @@ CELERY_RPC_EGGS_CLIENT = {
 }
 ```
 
+*Note:
+1. client and server must share the same __BROKER_URL__, __RESULT_BACKEND__, __DEFAULT_EXCHANGE__, __DEFAULT_QUEUE__, __DEFAULT_ROUTING_KEY__
+2. different server must serve different request queues with different routing keys or must work with different exchanges*
+
 example.py
 
 ```python

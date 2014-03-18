@@ -29,7 +29,7 @@ class HighPriorityRequestTests(TestCase):
         """
         signature = self.rpc_client.prepare_task(self.task_name, None, None,
                                                  high_priority=True)
-        self.assertEquals(config.CELERY_HIGH_PRIORITY_ROUTING_KEY,
+        self.assertEquals(config.CELERY_DEFAULT_ROUTING_KEY + '.high_priority',
                           signature.options['routing_key'])
 
     def _assertProxyMethodSupportHighPriority(self, method_name, *args,
@@ -43,7 +43,7 @@ class HighPriorityRequestTests(TestCase):
         signature = _send_request.call_args[0][0]
         msg = 'RPC-client method `{}` does not support high'.format(method_name)
         msg += ' priority requests'
-        self.assertEquals(config.CELERY_HIGH_PRIORITY_ROUTING_KEY,
+        self.assertEquals(config.CELERY_DEFAULT_ROUTING_KEY + '.high_priority',
                           signature.options.get('routing_key'), msg)
 
     def testHighPriorityFilter(self):

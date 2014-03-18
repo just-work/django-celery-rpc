@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from celery.exceptions import TimeoutError
 
 from . import utils
-from .config import GET_RESULT_TIMEOUT, CELERY_HIGH_PRIORITY_ROUTING_KEY
+from .config import GET_RESULT_TIMEOUT
 from .exceptions import RestFrameworkError
 
 
@@ -59,7 +59,8 @@ class Client(object):
         """
         task = self._task_stubs[task_name]
         if high_priority:
-            options['routing_key'] = CELERY_HIGH_PRIORITY_ROUTING_KEY
+            conf = task.app.conf
+            options['routing_key'] = conf['CELERY_HIGH_PRIORITY_ROUTING_KEY']
         return task.subtask(args=args, kwargs=kwargs, **options)
 
     def filter(self, model, kwargs=None, async=False, timeout=None, retries=1,
