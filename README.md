@@ -87,11 +87,29 @@ span_client = Client()
 eggs_client = Client(CELERY_RPC_EGGS_CLIENT)
 ```
 
+## Using client
+
+List of all MyModel objects with high_priority
+
+```
+span_client.filter('app.models:MyModel')
+```
+
 ## Run server instance
 
 ```python
 celery worker -A celery_rpc.app
 ```
+
+Server with support task consuming prioritization
+
+```python
+celery multi start 2 -A celery_rpc.app -Q:1 celery_rpc.requests.high_priority
+```
+
+	Note, you must replace 'celery_rpc.request' with actual value of config param *CELERY_DEFAULT_QUEUE*.
+
+Command will start two instances. First instance will consume from high priority queue only. Second instance will serve both queues.
 
 For daemonization see [Running the worker as a daemon](http://celery.readthedocs.org/en/latest/tutorials/daemonizing.html)
 
@@ -103,6 +121,7 @@ python django-celery-rpc/celery_rpc/runtests/runtests.py
 
 ## TODO
 
+ - Shrink fields of result object for *filter* method.
  - Set default non-generic model serializer.
  - Django-free mode for client and server.
  - Token auth and permissions support (like DRF).

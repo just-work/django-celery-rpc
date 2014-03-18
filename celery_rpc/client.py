@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from celery.exceptions import TimeoutError
 
 from . import utils
-from .config import GET_RESULT_TIMEOUT
+from .config import GET_RESULT_TIMEOUT, CELERY_HIGH_PRIORITY_ROUTING_KEY
 from .exceptions import RestFrameworkError
 
 
@@ -43,28 +43,35 @@ class Client(object):
         self._app = utils.create_celery_app(config=app_config)
         self._task_stubs = self._register_stub_tasks(self._app)
 
-    def prepare_task(self, task_name, args, kwargs, **options):
+    def prepare_task(self, task_name, args, kwargs, high_priority=False,
+                     **options):
         """ Prepare subtask signature
 
         :param task_name: task name like 'celery_rpc.filter' which exists
             in `_task_stubs`
         :param kwargs: optional parameters of request
         :param args: optional parameters of request
+        :param high_priority: ability to speedup consuming of the task
+            if server support prioritization, by default False
         :param **options: optional parameter of apply_async
         :return: celery.canvas.Signature instance
 
         """
         task = self._task_stubs[task_name]
+        if high_priority:
+            options['routing_key'] = CELERY_HIGH_PRIORITY_ROUTING_KEY
         return task.subtask(args=args, kwargs=kwargs, **options)
 
-    def filter(self, model, retries=1, kwargs=None, async=False, timeout=None,
-               **options):
+    def filter(self, model, kwargs=None, async=False, timeout=None, retries=1,
+               high_priority=False, **options):
         """ Call filtering Django model objects on server
 
         :param model: full name of model symbol like 'package.module:Class'
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
+        :param high_priority: ability to speedup consuming of the task
+            if server support prioritization, by default False
         :param kwargs: optional parameters of request
             filters - dict of terms compatible with django database query
             offset - offset from which return a results
@@ -76,11 +83,11 @@ class Client(object):
         """
         args = (model, )
         subtask = self.prepare_task(utils.FILTER_TASK_NAME, args, kwargs,
-                                    **options)
+                                    high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def update(self, model, data, kwargs=None, async=False, timeout=None,
-               retries=1, **options):
+               retries=1, high_priority=False, **options):
         """ Call update Django model objects on server
 
         :param model: full name of model symbol like 'package.module:Class'
@@ -89,6 +96,8 @@ class Client(object):
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
+        :param high_priority: ability to speedup consuming of the task
+            if server support prioritization, by default False
         :param **options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
             AsyncResult if async is True
@@ -99,11 +108,11 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         subtask = self.prepare_task(utils.UPDATE_TASK_NAME, args, kwargs,
-                                    **options)
+                                    high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def getset(self, model, data, kwargs=None, async=False, timeout=None,
-               retries=1, **options):
+               retries=1, high_priority=False, **options):
         """ Call update Django model objects on server and return previous state
 
         :param model: full name of model symbol like 'package.module:Class'
@@ -112,6 +121,8 @@ class Client(object):
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
+        :param high_priority: ability to speedup consuming of the task
+            if server support prioritization, by default False
         :param **options: optional parameter of apply_async
         :return: dict with old state of model or list of them or
             AsyncResult if async is True
@@ -122,11 +133,11 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         subtask = self.prepare_task(utils.GETSET_TASK_NAME, args, kwargs,
-                                    **options)
+                                    high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def update_or_create(self, model, data, kwargs=None, async=False,
-                         timeout=None, retries=1, **options):
+                         timeout=None, retries=1, high_priority=False, **options):
         """ Call update Django model objects on server. If there is not for some
         data, then a new object will be created.
 
@@ -136,6 +147,8 @@ class Client(object):
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
+        :param high_priority: ability to speedup consuming of the task
+            if server support prioritization, by default False
         :param **options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
             AsyncResult if async is True
@@ -146,11 +159,11 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         subtask = self.prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME, args,
-                                    kwargs, **options)
+                                    kwargs, high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def create(self, model, data, kwargs=None, async=False, timeout=None,
-               retries=1, **options):
+               retries=1, high_priority=False, **options):
         """ Call create Django model objects on server.
 
         :param model: full name of model symbol like 'package.module:Class'
@@ -159,6 +172,8 @@ class Client(object):
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
+        :param high_priority: ability to speedup consuming of the task
+            if server support prioritization, by default False
         :param **options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
             AsyncResult if async is True
@@ -169,11 +184,11 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         subtask = self.prepare_task(utils.CREATE_TASK_NAME, args,
-                                    kwargs, **options)
+                                    kwargs, high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def delete(self, model, data, kwargs=None, async=False, timeout=None,
-               retries=1, **options):
+               retries=1, high_priority=False, **options):
         """ Call delete Django model objects on server.
 
         :param model: full name of model symbol like 'package.module:Class'
@@ -182,6 +197,8 @@ class Client(object):
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
+        :param high_priority: ability to speedup consuming of the task
+            if server support prioritization, by default False
         :param **options: optional parameter of apply_async
         :return: None or [] if multiple delete or AsyncResult if async is True
         :raise InvalidRequest: if data has non iterable type
@@ -191,11 +208,11 @@ class Client(object):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
         subtask = self.prepare_task(utils.DELETE_TASK_NAME, args, kwargs,
-                                    **options)
+                                    high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def call(self, function, args=None, kwargs=None, async=False, timeout=None,
-             retries=1, **options):
+             retries=1, high_priority=False, **options):
         """ Call function on server
 
         :param function: full name of model symbol like 'package.module:Class'
@@ -204,6 +221,8 @@ class Client(object):
         :param async: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
+        :param high_priority: ability to speedup consuming of the task
+            if server support prioritization, by default False
         :param **options: optional parameter of apply_async
         :return: result of function call or AsyncResult if async is True
         :raise InvalidRequest: if data has non iterable type
@@ -211,7 +230,7 @@ class Client(object):
         """
         args = (function, args, kwargs)
         subtask = self.prepare_task(utils.CALL_TASK_NAME, args, None,
-                                    **options)
+                                    high_priority=high_priority, **options)
         return self._send_request(subtask, async, timeout, retries)
 
     def get_result(self, async_result, timeout=None):
