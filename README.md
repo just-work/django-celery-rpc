@@ -107,7 +107,7 @@ Server with support task consuming prioritization
 celery multi start 2 -A celery_rpc.app -Q:1 celery_rpc.requests.high_priority
 ```
 
-_Note, you must replace 'celery_rpc.request' with actual value of config param **CELERY_DEFAULT_QUEUE**._
+*Note, you must replace 'celery_rpc.request' with actual value of config param __CELERY_DEFAULT_QUEUE__*
 
 Command will start two instances. First instance will consume from high priority queue only. Second instance will serve both queues.
 
