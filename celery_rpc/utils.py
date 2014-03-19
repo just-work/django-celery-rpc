@@ -26,7 +26,7 @@ def create_celery_app(config=None, **opts):
 
 FILTER_TASK_NAME = 'celery_rpc.filter'
 UPDATE_TASK_NAME = 'celery_rpc.update'
-GETSET_TASK_NAME = 'celery.rpc.getset'
+GETSET_TASK_NAME = 'celery_rpc.getset'
 UPDATE_OR_CREATE_TASK_NAME = 'celery_rpc.update_or_create'
 CREATE_TASK_NAME = 'celery_rpc.create'
 DELETE_TASK_NAME = 'celery_rpc.delete'
