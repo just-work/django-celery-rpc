@@ -11,7 +11,7 @@ from rest_framework.serializers import ModelSerializer
 
 from . import config, utils
 from .app import rpc
-from .exceptions import RestFrameworkError
+from .exceptions import RestFrameworkError, ModelTaskError
 
 
 class ModelTask(Task):
@@ -24,7 +24,12 @@ class ModelTask(Task):
         """
         self.request.model = self._import_model(model)
         args = [model] + list(args)
-        return self.run(*args, **kwargs)
+        try:
+            return self.run(*args, **kwargs)
+        except ModelTaskError:
+            raise
+        except Exception as e:
+            raise ModelTaskError('Unhandled model error', str(e))
 
     @staticmethod
     def _import_model(model_name):
@@ -124,6 +129,7 @@ class ModelChangeTask(ModelTask):
         :param using: send query to specified DB alias
         :return: (Model instance or queryset, many flag)
             Many flag is True if queryset is returned.
+        :raise self.model.DoesNotExist: if cannot find object in single mode
 
         """
         pk_name = self.pk_name
@@ -132,10 +138,7 @@ class ModelChangeTask(ModelTask):
         if using:
             qs.using(using)
         if isinstance(data, dict):
-            try:
-                instance = qs.get(pk=get_pk_value(data))
-            except self.model.DoesNotExist:
-                instance = None
+            instance = qs.get(pk=get_pk_value(data))
             many = False
         else:
             pk_values = [get_pk_value(item) for item in data]
@@ -144,7 +147,7 @@ class ModelChangeTask(ModelTask):
         return instance, many
 
     def perform_changes(self, instance, data, many, allow_add_remove=False,
-                        partial=True, serializer_cls=None):
+                        partial=True, force_insert=False, force_update=False):
         """ Change model in accordance with params
 
         :param instance: one or several instances of model
@@ -162,7 +165,8 @@ class ModelChangeTask(ModelTask):
                                            partial=partial)
 
         if not serializer.errors:
-            serializer.save()
+            serializer.save(force_insert=force_insert,
+                            force_update=force_update)
             return serializer.data
         else:
             raise RestFrameworkError('Serializer errors happened',
@@ -182,7 +186,7 @@ def update(self, model, data, fields=None, nocache=False,
     """
     instance, many = self.get_instance(data)
     return self.perform_changes(instance=instance, data=data, many=many,
-                                allow_add_remove=False, serializer_cls=serializer_cls)
+                                allow_add_remove=False, force_update=True)
 
 
 def atomic_commit_on_success(using=None):
@@ -213,13 +217,12 @@ def getset(self, model, data, fields=None, nocache=False,
     with atomic_commit_on_success(using=db_for_write):
         instance, many = self.get_instance(data, using=db_for_write)
         serializer = self.serializer_class(instance=instance, data=data,
-                                           many=many, allow_add_remove=False,
-                                           partial=True)
+                                           many=many, allow_add_remove=False)
 
         old_values = serializer.data
 
         if not serializer.errors:
-            serializer.save()
+            serializer.save(force_update=True)
             return old_values
         else:
             raise RestFrameworkError('Serializer errors happened',
@@ -237,9 +240,12 @@ def update_or_create(self, model, data, fields=None, nocache=False,
     :return: serialized model data or list of one or errors
 
     """
-    instance, many = self.get_instance(data)
+    try:
+        instance, many = self.get_instance(data)
+    except self.model.DoesNotExist:
+        instance, many = None, False
     return self.perform_changes(instance=instance, data=data, many=many,
-                                allow_add_remove=many, serializer_cls=serializer_cls)
+                                allow_add_remove=many)
 
 
 @rpc.task(name=utils.CREATE_TASK_NAME, bind=True, base=ModelChangeTask)
@@ -255,7 +261,7 @@ def create(self, model, data, fields=None, nocache=False,
     """
     instance, many = (None, False if isinstance(data, dict) else True)
     return self.perform_changes(instance=instance, data=data, many=many,
-                                allow_add_remove=many, serializer_cls=serializer_cls)
+                                allow_add_remove=many, force_insert=True)
 
 
 @rpc.task(name=utils.DELETE_TASK_NAME, bind=True, base=ModelChangeTask)
@@ -277,7 +283,7 @@ def delete(self, model, data, fields=None, nocache=False,
             raise RestFrameworkError('Could not delete instance', e)
     else:
         return self.perform_changes(instance=instance, data=[], many=many,
-                                    allow_add_remove=many, serializer_cls=serializer_cls)
+                                    allow_add_remove=many)
 
 
 class FunctionTask(Task):

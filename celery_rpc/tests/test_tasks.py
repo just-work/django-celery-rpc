@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from random import randint
 
 from uuid import uuid4
 
@@ -7,7 +8,8 @@ from django.test import TestCase
 from rest_framework import serializers
 
 from .. import tasks
-from .models import SimpleModel
+from ..exceptions import RestFrameworkError, ModelTaskError
+from .models import SimpleModel, NonAutoPrimaryKeyModel
 
 
 def get_model_dict(model):
@@ -53,7 +55,20 @@ class SimpleTaskSerializer(serializers.ModelSerializer):
         fields = ('id', )
 
 
-class UpdateTaskTests(BaseTaskTests):
+class SingleObjectsDoesNotExistMixin(object):
+    """ Checks behavior of tasks, which modify existing objects.
+    """
+
+    def testSingleObjectDoesNotExist(self):
+        """ Raise exception if cannot find object in single mode  """
+        with self.assertRaisesRegexp(ModelTaskError,
+                                     r'matching query does not exist.'):
+            self.task.delay(self.MODEL_SYMBOL,
+                            {'char': str(uuid4()),
+                             'id': randint(100, 1000)}).get()
+
+
+class UpdateTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
 
     task = tasks.update
 
@@ -107,7 +122,8 @@ class UpdateTaskTests(BaseTaskTests):
         char_val = str(uuid4())
         expected = get_model_dict(self.models[0])
 
-        with self.assertRaises(ImportError):
+        with self.assertRaisesRegexp(ModelTaskError,
+                                     r'No module named not.existing'):
             self.task.delay(self.MODEL_SYMBOL,
                             {'char': char_val, 'id': expected['id']},
                             serializer_cls='not.existing.symbol').get()
@@ -117,14 +133,14 @@ class UpdateTaskTests(BaseTaskTests):
         char_val = str(uuid4())
         expected = get_model_dict(self.models[0])
 
-        with self.assertRaises(TypeError):
+        with self.assertRaisesRegexp(ModelTaskError, r'not a DRF serializer'):
             serializer_cls = 'celery_rpc.tests.models:SimpleModel'
             self.task.delay(self.MODEL_SYMBOL,
                             {'char': char_val, 'id': expected['id']},
                             serializer_cls=serializer_cls).get()
 
 
-class GetSetTaskTests(BaseTaskTests):
+class GetSetTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
 
     task = tasks.getset
 
@@ -165,7 +181,7 @@ class CreateTaskTests(BaseTaskTests):
         self.assertEquals(expected, r.get()['char'])
         self.assertEquals(1, SimpleModel.objects.filter(char=expected).count())
 
-    def testCreateMany(self):
+    def testCreateMulti(self):
         uuids = str(uuid4()), str(uuid4())
         expected = [{'char': v} for v in uuids]
         self.assertEquals(0, SimpleModel.objects.filter(char__in=uuids).count())
@@ -175,18 +191,48 @@ class CreateTaskTests(BaseTaskTests):
         self.assertEquals(expected, [{'char': i['char']} for i in r.get()])
         self.assertEquals(2, SimpleModel.objects.filter(char__in=uuids).count())
 
+    def testSingleObjectDoesNotExist(self):
+        """ Creates new object if provided ID does not exist """
+        expected = str(uuid4())
+        self.assertEquals(0, SimpleModel.objects.filter(char=expected).count())
 
-class UpdateOrCreateTaskTests(UpdateTaskTests, CreateTaskTests):
+        unexpected_id = randint(100, 1000)
+        r = self.task.delay(self.MODEL_SYMBOL, {'char': expected,
+                                                'id': unexpected_id})
+
+        self.assertEquals(expected, r.get()['char'])
+        self.assertNotEquals(unexpected_id, r.get()['id'])
+        self.assertEquals(0, SimpleModel.objects.filter(char=unexpected_id).count())
+        self.assertEquals(1, SimpleModel.objects.filter(char=expected).count())
+
+    def testSingleObjectAlreadyExist(self):
+        """ Raise exception if object already exists """
+        pk = randint(1, 1000)
+        obj = NonAutoPrimaryKeyModel.objects.create(pk=pk)
+        with self.assertRaisesRegexp(
+                RestFrameworkError,
+                r'Non auto primary key model with this Id already exists.'):
+            r = self.task.delay('celery_rpc.tests.models:NonAutoPrimaryKeyModel',
+                                {'id': obj.pk})
+            self.assertNotEquals(self.models[0].id, r.get()['id'])
+
+
+class UpdateOrCreateTaskTests(CreateTaskTests, UpdateTaskTests):
 
     task = tasks.update_or_create
 
+    def testSingleObjectAlreadyExist(self):
+        super(UpdateOrCreateTaskTests, self).testUpdateOne()
 
-class DeleteTaskTests(BaseTaskTests):
+
+class DeleteTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
+
+    task = tasks.delete
 
     def testDeleteOne(self):
         expected = get_model_dict(self.models[0])
 
-        r = tasks.delete.delay(self.MODEL_SYMBOL, expected)
+        r = self.task.delay(self.MODEL_SYMBOL, expected)
 
         self.assertEquals(None, r.get())
         self.assertEquals(0, SimpleModel.objects.filter(id=expected['id']).count())
@@ -195,7 +241,7 @@ class DeleteTaskTests(BaseTaskTests):
         expected = (get_model_dict(self.models[0]),
                     get_model_dict(self.models[1]))
 
-        r = tasks.delete.delay(self.MODEL_SYMBOL, expected)
+        r = self.task.delay(self.MODEL_SYMBOL, expected)
 
         self.assertEquals([], r.get())
         ids = [v['id'] for v in expected]
