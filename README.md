@@ -1,7 +1,7 @@
 django-celery-rpc
 =================
 
-[![Build Status](https://travis-ci.org/anatoliy-larin/django-celery-rpc.png?branch=master)](https://travis-ci.org/anatoliy-larin/django-celery-rpc)
+[![Build Status](https://travis-ci.org/ttyS15/django-celery-rpc.svg)](https://travis-ci.org/ttyS15/django-celery-rpc)
 
 Remote access from one system to models and functions of other one using Celery machinery.
 
