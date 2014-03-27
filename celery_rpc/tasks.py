@@ -29,7 +29,7 @@ class ModelTask(Task):
         except ModelTaskError:
             raise
         except Exception as e:
-            raise ModelTaskError('Unhandled model error', str(e))
+            raise ModelTaskError('Unhandled model error', str(type(e)), str(e))
 
     @staticmethod
     def _import_model(model_name):

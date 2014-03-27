@@ -210,8 +210,8 @@ class CreateTaskTests(BaseTaskTests):
         pk = randint(1, 1000)
         obj = NonAutoPrimaryKeyModel.objects.create(pk=pk)
         with self.assertRaisesRegexp(
-                RestFrameworkError,
-                r'Non auto primary key model with this Id already exists.'):
+                ModelTaskError,
+                r'primary key|PRIMARY KEY'):
             r = self.task.delay('celery_rpc.tests.models:NonAutoPrimaryKeyModel',
                                 {'id': obj.pk})
             self.assertNotEquals(self.models[0].id, r.get()['id'])
