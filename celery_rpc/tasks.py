@@ -217,7 +217,8 @@ def getset(self, model, data, fields=None, nocache=False,
     with atomic_commit_on_success(using=db_for_write):
         instance, many = self.get_instance(data, using=db_for_write)
         serializer = self.serializer_class(instance=instance, data=data,
-                                           many=many, allow_add_remove=False)
+                                           many=many, allow_add_remove=False,
+                                           partial=True)
 
         old_values = serializer.data
 

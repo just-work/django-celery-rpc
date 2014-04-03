@@ -10,3 +10,10 @@ class SimpleModel(models.Model):
 
 class NonAutoPrimaryKeyModel(models.Model):
     id = models.IntegerField(primary_key=True)
+
+
+class PartialUpdateModel(models.Model):
+    """ For partial update checks
+    """
+    f1 = models.IntegerField()
+    f2 = models.IntegerField()

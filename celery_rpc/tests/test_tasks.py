@@ -8,8 +8,8 @@ from django.test import TestCase
 from rest_framework import serializers
 
 from .. import tasks
-from ..exceptions import RestFrameworkError, ModelTaskError
-from .models import SimpleModel, NonAutoPrimaryKeyModel
+from ..exceptions import ModelTaskError
+from .models import SimpleModel, NonAutoPrimaryKeyModel, PartialUpdateModel
 
 
 def get_model_dict(model):
@@ -167,6 +167,18 @@ class GetSetTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
         updated = [get_model_dict(o) for o in SimpleModel.objects.all()[0:2]]
         self.assertEquals(new, updated)
 
+    def testPartialUpdate(self):
+        """ Check that getset allow update model partially
+        """
+        m = AutoFixture(PartialUpdateModel).create_one()
+        preserve_f2 = m.f2
+        expected = randint(1, 1000)
+        r = self.task.delay('celery_rpc.tests.models:PartialUpdateModel',
+                            {'f1': expected, 'pk': m.pk})
+        r = r.get()
+        m = PartialUpdateModel.objects.get(pk=m.pk)
+        self.assertEquals(expected, m.f1)
+        self.assertEquals(preserve_f2, m.f2)
 
 class CreateTaskTests(BaseTaskTests):
 
