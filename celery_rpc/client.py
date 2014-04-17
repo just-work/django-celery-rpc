@@ -297,7 +297,7 @@ class Client(object):
         """
         tasks = {}
         for name in utils.TASK_NAME_MAP.values():
-            @app.task(bind=True, name=name)
+            @app.task(bind=True, name=name, shared=False)
             def task_stub(*args, **kwargs):
                 pass
             tasks[name] = task_stub
