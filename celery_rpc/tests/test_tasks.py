@@ -46,6 +46,14 @@ class FilterTaskTests(BaseTaskTests):
                                filters={'pk': expected['id']})
         self.assertEquals(expected, r.get()[0])
 
+    def testSerializerFields(self):
+        expected = get_model_dict(self.models[0])
+        field = expected.keys()[0]
+        r = tasks.filter.delay(self.MODEL_SYMBOL,
+                               filters={'pk': expected['id']},
+                               fields=[field])
+        self.assertEquals({field: expected[field]}, r.get()[0])
+
 
 class SimpleTaskSerializer(serializers.ModelSerializer):
     """ Test serializer
