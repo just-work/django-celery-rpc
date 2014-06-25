@@ -115,21 +115,13 @@ def filter(self, model, filters=None, offset=0,
 
     """
     filters = filters if isinstance(filters, dict) else {}
-    # do main filtering
     qs = self.default_queryset.filter(**filters)
-    # add order_by: check list or tuple
-    # or string and add params to qs
     if order_by:
         if isinstance(order_by, basestring):
             qs = qs.order_by(order_by)
         elif isinstance(order_by, (list, tuple)):
-            if len(order_by) == 1:
-                qs = qs.order_by(order_by[0])
-            else:
-                qs = qs.order_by(order_by)
-    # add limit and offset
+            qs = qs.order_by(*order_by)
     qs = qs[offset:offset+limit]
-    # return serializer data
     return self.serializer_class(instance=qs, many=True).data
 
 
