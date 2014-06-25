@@ -102,18 +102,34 @@ class ModelTask(Task):
 @rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=ModelTask, shared=False)
 def filter(self, model, filters=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None,  exclude=[],
-           depth=0, manager='objects', database=None, serializer_cls=None, *args, **kwargs):
+           depth=0, manager='objects', database=None, serializer_cls=None,
+           order_by=[], *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model: full name of model class like 'app.models:Model'
     :param filters: filter supported by model manager like {'pk__in': [1,2,3]}
     :param offset: offset of first item in the queryset (by default 0)
     :param limit: max number of result list (by default 1000)
+    :param order_by: type list, tuple or string - add order_by to queryset, default = []
     :return: list of serialized model data
 
     """
     filters = filters if isinstance(filters, dict) else {}
-    qs = self.default_queryset.filter(**filters)[offset:offset+limit]
+    # do main filtering
+    qs = self.default_queryset.filter(**filters)
+    # add order_by: check list or tuple
+    # or string and add params to qs
+    if order_by:
+        if isinstance(order_by, basestring):
+            qs = qs.order_by(order_by)
+        elif isinstance(order_by, (list, tuple)):
+            if len(order_by) == 1:
+                qs = qs.order_by(order_by[0])
+            else:
+                qs = qs.order_by(order_by)
+    # add limit and offset
+    qs = qs[offset:offset+limit]
+    # return serializer data
     return self.serializer_class(instance=qs, many=True).data
 
 
