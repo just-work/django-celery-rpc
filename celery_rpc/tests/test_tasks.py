@@ -66,7 +66,7 @@ class FilterTaskTests(BaseTaskTests):
                                order_by=['char'])
         self.assertEquals(['a', 'b'], [item['char'] for item in r.get()])
 
-    def testRevertOrdering(self):
+    def testReverseOrdering(self):
         self.models[0].char = 'a'
         self.models[0].save()
 
