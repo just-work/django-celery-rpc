@@ -114,7 +114,8 @@ def filter(self, model, filters=None, offset=0,
     :param filters: filter supported by model manager like {'pk__in': [1,2,3]}
     :param offset: offset of first item in the queryset (by default 0)
     :param limit: max number of result list (by default 1000)
-    :param order_by: type list, tuple or string - add order_by to queryset, default = []
+    :param fields: shrink serialized fields of result
+    :param order_by: order of result list (list, tuple or string), default = []
     :return: list of serialized model data
 
     """

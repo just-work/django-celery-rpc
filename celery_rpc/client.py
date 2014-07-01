@@ -54,7 +54,6 @@ class Client(object):
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
         :param **options: optional parameter of apply_async
-        :param order_by: type list, tuple or string - add order_by to queryset, default = []
         :return: celery.canvas.Signature instance
 
         """
@@ -77,7 +76,10 @@ class Client(object):
         :param kwargs: optional parameters of request
             filters - dict of terms compatible with django database query
             offset - offset from which return a results
-            limit - max number results
+            limit - max number of results
+            fields - list of serializer fields, which will be returned
+            order_by - order of results (list, tuple or string),
+                minus ('-') set reverse order, default = []
         :param **options: optional parameter of apply_async
         :return: list of filtered objects or AsyncResult if async is True
         :raise: see get_result()
