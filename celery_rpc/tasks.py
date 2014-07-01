@@ -60,6 +60,7 @@ class ModelTask(Task):
     def _create_serializer_class(self, model_class):
         """ Return REST framework serializer class for model.
         """
+
         # default serializer
         base_serializer_class = ModelSerializer
 
@@ -106,18 +107,25 @@ class ModelTask(Task):
 def filter(self, model, filters=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None, exclude=[],
            depth=0, manager='objects', database=None, serializer_cls=None,
-           *args, **kwargs):
+           order_by=[], *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model: full name of model class like 'app.models:Model'
     :param filters: filter supported by model manager like {'pk__in': [1,2,3]}
     :param offset: offset of first item in the queryset (by default 0)
     :param limit: max number of result list (by default 1000)
+    :param order_by: type list, tuple or string - add order_by to queryset, default = []
     :return: list of serialized model data
 
     """
     filters = filters if isinstance(filters, dict) else {}
-    qs = self.default_queryset.filter(**filters)[offset:offset+limit]
+    qs = self.default_queryset.filter(**filters)
+    if order_by:
+        if isinstance(order_by, basestring):
+            qs = qs.order_by(order_by)
+        elif isinstance(order_by, (list, tuple)):
+            qs = qs.order_by(*order_by)
+    qs = qs[offset:offset+limit]
     return self.serializer_class(instance=qs, many=True).data
 
 

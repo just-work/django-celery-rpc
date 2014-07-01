@@ -54,6 +54,30 @@ class FilterTaskTests(BaseTaskTests):
                                fields=[field])
         self.assertEquals({field: expected[field]}, r.get()[0])
 
+    def testOrdering(self):
+        self.models[0].char = 'a'
+        self.models[0].save()
+
+        self.models[1].char = 'b'
+        self.models[1].save()
+
+        r = tasks.filter.delay(self.MODEL_SYMBOL,
+                               filters={'char__in': ['a', 'b']},
+                               order_by=['char'])
+        self.assertEquals(['a', 'b'], [item['char'] for item in r.get()])
+
+    def testReverseOrdering(self):
+        self.models[0].char = 'a'
+        self.models[0].save()
+
+        self.models[1].char = 'b'
+        self.models[1].save()
+
+        r = tasks.filter.delay(self.MODEL_SYMBOL,
+                               filters={'char__in': ['a', 'b']},
+                               order_by='-char')
+        self.assertEquals(['b', 'a'], [item['char'] for item in r.get()])
+
 
 class SimpleTaskSerializer(serializers.ModelSerializer):
     """ Test serializer
