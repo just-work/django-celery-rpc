@@ -54,6 +54,7 @@ class Client(object):
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
         :param **options: optional parameter of apply_async
+        :param order_by: type list, tuple or string - add order_by to queryset, default = []
         :return: celery.canvas.Signature instance
 
         """

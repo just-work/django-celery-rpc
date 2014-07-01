@@ -80,6 +80,10 @@ class ModelTask(Task):
                 except AttributeError:
                     return None
 
+        fields = self.request.kwargs.get("fields")
+        if fields:
+            GenericModelSerializer.Meta.fields = fields
+
         return GenericModelSerializer
 
     @property
@@ -101,7 +105,7 @@ class ModelTask(Task):
 
 @rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=ModelTask, shared=False)
 def filter(self, model, filters=None, offset=0,
-           limit=config.FILTER_LIMIT, fields=None,  exclude=[],
+           limit=config.FILTER_LIMIT, fields=None, exclude=[],
            depth=0, manager='objects', database=None, serializer_cls=None,
            order_by=[], *args, **kwargs):
     """ Filter Django models and return serialized queryset.
