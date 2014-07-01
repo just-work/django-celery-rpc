@@ -60,7 +60,6 @@ class ModelTask(Task):
     def _create_serializer_class(self, model_class):
         """ Return REST framework serializer class for model.
         """
-
         # default serializer
         base_serializer_class = ModelSerializer
 
@@ -79,6 +78,10 @@ class ModelTask(Task):
                     return data.get('pk', data.get(pk_name, None))
                 except AttributeError:
                     return None
+
+        fields = self.request.kwargs.get("fields")
+        if fields:
+            GenericModelSerializer.Meta.fields = fields
 
         return GenericModelSerializer
 
@@ -101,8 +104,9 @@ class ModelTask(Task):
 
 @rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=ModelTask, shared=False)
 def filter(self, model, filters=None, offset=0,
-           limit=config.FILTER_LIMIT, fields=None,  exclude=[],
-           depth=0, manager='objects', database=None, serializer_cls=None, *args, **kwargs):
+           limit=config.FILTER_LIMIT, fields=None, exclude=[],
+           depth=0, manager='objects', database=None, serializer_cls=None,
+           *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model: full name of model class like 'app.models:Model'
