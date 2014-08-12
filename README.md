@@ -125,7 +125,6 @@ python django-celery-rpc/celery_rpc/runtests/runtests.py
 
 ## TODO
 
- - Shrink fields of result object for **filter** method.
  - Set default non-generic model serializer.
- - Django-free mode for client and server.
+ - Test support for RPC result backend from Celery
  - Token auth and permissions support (like DRF).
