@@ -1,8 +1,12 @@
 # coding: utf-8
 from __future__ import absolute_import
 import json
+try:
+    from django.conf import settings as _settings
+except ImportError:
+    # No need django for celery_rpc client
+    _settings = object()
 
-from django.conf import settings as _settings
 from kombu.serialization import registry
 
 from .encoders import XJSONEncoder
