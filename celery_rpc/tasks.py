@@ -168,7 +168,7 @@ class ModelChangeTask(ModelTask):
                                            allow_add_remove=allow_add_remove,
                                            partial=partial)
 
-        if not serializer.errors:
+        if serializer.is_valid():
             serializer.save(force_insert=force_insert,
                             force_update=force_update)
             return serializer.data
