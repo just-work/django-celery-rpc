@@ -23,6 +23,12 @@ FILTER_LIMIT = 1000
 # Default timeout for getting results
 GET_RESULT_TIMEOUT = 10
 
+# Provide ability to change base task class for celery-rpc server tasks.
+# Example: { 'ModelChangeTask': my.own.ModelChangeTask }
+# Key - symbolic class name, value - class with suitable interface.
+# Do it on your own risk!
+OVERRIDE_BASE_TASKS = {}
+
 # See Celery configuration parameters at
 # http://docs.celeryproject.org/en/latest/configuration.html
 # Some reasonable defaults are defined below

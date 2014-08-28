@@ -21,7 +21,7 @@ Client and server are designed to:
  - atomic get-set model state with bulk mode support;
  - call function;
 
-## Configure
+## Basic Configuration
 
 Default configuration of **django-celery-rpc** must be overridden in settings.py by **CELERY_RPC_CONFIG**.
 The **CELERY_RPC_CONFIG** is a dict which must contains at least two keys: **BROKER_URL** and **CELERY_RESULT_BACKEND**.
@@ -121,6 +121,21 @@ For daemonization see [Running the worker as a daemon](http://celery.readthedocs
 
 ```shell
 python django-celery-rpc/celery_rpc/runtests/runtests.py
+```
+
+## More Configuration
+
+### Overriding base task class
+
+from my.tasks import MyModelChangeTask
+
+```python
+OVERRIDE_BASE_TASKS = {
+    'ModelChangeTask': MyModelChangeTask
+}
+
+Supported class names: ModelTask, ModelChangeTask, FunctionTask
+
 ```
 
 ## TODO

@@ -102,8 +102,11 @@ class ModelTask(Task):
     def default_queryset(self):
         return self._create_queryset(self.model)
 
+_base_model_task = config.OVERRIDE_BASE_TASKS.get('ModelTask') or ModelTask
 
-@rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=ModelTask, shared=False)
+
+@rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=_base_model_task,
+          shared=False)
 def filter(self, model, filters=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None, exclude=[],
            depth=0, manager='objects', database=None, serializer_cls=None,
@@ -185,8 +188,12 @@ class ModelChangeTask(ModelTask):
             raise RestFrameworkError('Serializer errors happened',
                                      serializer.errors)
 
+_base_model_change_task = (config.OVERRIDE_BASE_TASKS.get('ModelChangeTask')
+                           or ModelChangeTask)
 
-@rpc.task(name=utils.UPDATE_TASK_NAME, bind=True, base=ModelChangeTask, shared=False)
+
+@rpc.task(name=utils.UPDATE_TASK_NAME, bind=True, base=_base_model_change_task,
+          shared=False)
 def update(self, model, data, fields=None, nocache=False,
            manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Update Django models by PK and return new values.
@@ -215,7 +222,8 @@ def atomic_commit_on_success(using=None):
         raise RuntimeError('Invalid Django version: {}'.format(ver))
 
 
-@rpc.task(name=utils.GETSET_TASK_NAME, bind=True, base=ModelChangeTask, shared=False)
+@rpc.task(name=utils.GETSET_TASK_NAME, bind=True, base=_base_model_change_task,
+          shared=False)
 def getset(self, model, data, fields=None, nocache=False,
            manager='objects', database=None, *args, **kwargs):
     """ Update Django models by PK and return old values as one atomic action.
@@ -243,7 +251,8 @@ def getset(self, model, data, fields=None, nocache=False,
                                      serializer.errors)
 
 
-@rpc.task(name=utils.UPDATE_OR_CREATE_TASK_NAME, bind=True, base=ModelChangeTask, shared=False)
+@rpc.task(name=utils.UPDATE_OR_CREATE_TASK_NAME, bind=True,
+          base=_base_model_change_task, shared=False)
 def update_or_create(self, model, data, fields=None, nocache=False,
                      manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Update Django models by PK or create new and return new values.
@@ -262,7 +271,8 @@ def update_or_create(self, model, data, fields=None, nocache=False,
                                 allow_add_remove=many)
 
 
-@rpc.task(name=utils.CREATE_TASK_NAME, bind=True, base=ModelChangeTask, shared=False)
+@rpc.task(name=utils.CREATE_TASK_NAME, bind=True, base=_base_model_change_task,
+          shared=False)
 def create(self, model, data, fields=None, nocache=False,
            manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Update Django models by PK or create new and return new values.
@@ -278,7 +288,8 @@ def create(self, model, data, fields=None, nocache=False,
                                 allow_add_remove=many, force_insert=True)
 
 
-@rpc.task(name=utils.DELETE_TASK_NAME, bind=True, base=ModelChangeTask, shared=False)
+@rpc.task(name=utils.DELETE_TASK_NAME, bind=True, base=_base_model_change_task,
+          shared=False)
 def delete(self, model, data, fields=None, nocache=False,
            manager='objects', database=None, serializer_cls=None, *args, **kwargs):
     """ Delete Django models by PK.
@@ -325,8 +336,12 @@ class FunctionTask(Task):
     def function(self):
         return self.request.function
 
+_base_function_task = (config.OVERRIDE_BASE_TASKS.get('FunctionTask')
+                       or FunctionTask)
 
-@rpc.task(name=utils.CALL_TASK_NAME, bind=True, base=FunctionTask, shared=False)
+
+@rpc.task(name=utils.CALL_TASK_NAME, bind=True, base=_base_function_task,
+          shared=False)
 def call(self, function, args, kwargs):
     """ Call function with args & kwargs
 
