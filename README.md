@@ -127,9 +127,9 @@ python django-celery-rpc/celery_rpc/runtests/runtests.py
 
 ### Overriding base task class
 
+```python
 from my.tasks import MyModelChangeTask
 
-```python
 OVERRIDE_BASE_TASKS = {
     'ModelChangeTask': MyModelChangeTask
 }
