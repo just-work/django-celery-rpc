@@ -1,34 +1,15 @@
 #!/usr/bin/env python
+
 import sys
 from optparse import OptionParser
 
 from django.conf import settings
 
 if not settings.configured:
-    settings.configure(
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': ':memory:',
-                'USER': '',
-                'PASSWORD': '',
-                'HOST': '',
-                'PORT': '',
-            }
-        },
-
-        INSTALLED_APPS=[
-            'django.contrib.contenttypes',
-            'celery_rpc',
-            'celery_rpc.tests',
-        ],
-        ROOT_URLCONF='',
-        DEBUG=True,
-
-        CELERY_RPC_CONFIG = {
-            'CELERY_ALWAYS_EAGER': True
-        },
-    )
+    from celery_rpc.runtests import settings as test_settings
+    kwargs = {k: getattr(test_settings, k) for k in dir(test_settings)
+              if not k.startswith('_')}
+    settings.configure(**kwargs)
 
 
 from django_nose import NoseTestSuiteRunner
