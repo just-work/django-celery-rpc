@@ -128,10 +128,10 @@ python django-celery-rpc/celery_rpc/runtests/runtests.py
 ### Overriding base task class
 
 ```python
-from my.tasks import MyModelChangeTask
-
 OVERRIDE_BASE_TASKS = {
-    'ModelChangeTask': MyModelChangeTask
+    'ModelTask': 'package.module.MyModelTask',
+    'ModelChangeTask': 'package.module.MyModelChangeTask',
+    'FunctionTask': 'package.module.MyFunctionTask'
 }
 
 Supported class names: ModelTask, ModelChangeTask, FunctionTask

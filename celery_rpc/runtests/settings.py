@@ -20,5 +20,8 @@ DATABASES = {
 SECRET_KEY = str(uuid4())
 
 CELERY_RPC_CONFIG = {
-    'CELERY_ALWAYS_EAGER': True
+    'CELERY_ALWAYS_EAGER': True,
+    'OVERRIDE_BASE_TASKS': {
+        'ModelTask': 'celery_rpc.tests.tasks.CustomModelTask'
+    }
 }
