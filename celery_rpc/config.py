@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import json
 
 from django.conf import settings as _settings
-from kombu.serialization import registry
+from kombu.serialization import registry, bytes_t
 
 from .encoders import XJSONEncoder
 
@@ -11,8 +11,14 @@ from .encoders import XJSONEncoder
 # Register enhanced json encoder
 def _json_dumps(obj):
     return json.dumps(obj, cls=XJSONEncoder)
+    
+def _json_loads(obj):
+    if isinstance(obj, bytes_t):
+        obj = obj.decode()
+    return json.loads(obj)
 
-registry.register('x-json', _json_dumps, json.loads, 'application/json', 'utf-8')
+
+registry.register('x-json', _json_dumps, _json_loads, 'application/json', 'utf-8')
 
 # Default limit for results of filter call
 FILTER_LIMIT = 1000
