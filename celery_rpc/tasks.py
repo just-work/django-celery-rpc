@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import django
 from django.db import router, transaction
-from django.utils import six
+import six
 
 from . import config, utils
 from .app import rpc
