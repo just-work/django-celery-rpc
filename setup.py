@@ -10,7 +10,7 @@ except ImportError:
 
 setup(
     name='django-celery-rpc',
-    version='0.12',
+    version='0.16',
     packages=find_packages(),
     url='https://github.com/ttyS15/django-celery-rpc',
     license='Public',
@@ -30,7 +30,7 @@ setup(
         'nose>=1.0',
     ],
     tests_require=[
-        'django >=1.3, <1.7',
+        'django >=1.3, <1.8',
         'djangorestframework >= 2.3, <2.4',
         'django-nose>=0.1.3',
         'django-autofixture==0.3.2',
