@@ -4,7 +4,7 @@ PYTHON_VERSION=$(python --version 2>&1)
 
 if [[ "$PYTHON_VERSION" > "Python 3" ]]
 then
-  if [[ "$DJANGO" < "Django=1.5" ]]
+  if [[ "$DJANGO" < "1.5" ]]
   then
     echo "Cannot run tests with $DJANGO on $PYTHON_VERSION"
     exit
