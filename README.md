@@ -21,7 +21,7 @@ Client and server are designed to:
  - atomic get-set model state with bulk mode support;
  - call function;
 
-## Configure
+## Basic Configuration
 
 Default configuration of **django-celery-rpc** must be overridden in settings.py by **CELERY_RPC_CONFIG**.
 The **CELERY_RPC_CONFIG** is a dict which must contains at least two keys: **BROKER_URL** and **CELERY_RESULT_BACKEND**.
@@ -123,9 +123,23 @@ For daemonization see [Running the worker as a daemon](http://celery.readthedocs
 python django-celery-rpc/celery_rpc/runtests/runtests.py
 ```
 
+## More Configuration
+
+### Overriding base task class
+
+```python
+OVERRIDE_BASE_TASKS = {
+    'ModelTask': 'package.module.MyModelTask',
+    'ModelChangeTask': 'package.module.MyModelChangeTask',
+    'FunctionTask': 'package.module.MyFunctionTask'
+}
+
+Supported class names: ModelTask, ModelChangeTask, FunctionTask
+
+```
+
 ## TODO
 
- - Shrink fields of result object for **filter** method.
  - Set default non-generic model serializer.
- - Django-free mode for client and server.
+ - Test support for RPC result backend from Celery
  - Token auth and permissions support (like DRF).

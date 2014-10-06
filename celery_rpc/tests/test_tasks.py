@@ -9,6 +9,7 @@ from rest_framework import serializers
 
 from .. import tasks
 from ..exceptions import ModelTaskError
+from ..tests.tasks import CustomModelTask
 from .models import SimpleModel, NonAutoPrimaryKeyModel, PartialUpdateModel
 
 
@@ -305,3 +306,10 @@ class CallTaskTests(TestCase):
         r = tasks.call.delay('celery_rpc.tests.test_tasks:plus', [a, b],
                              None)
         self.assertEquals(expected, r.get())
+
+
+class OverrideTaskTests(TestCase):
+    """ Check if base task class overriding is worked.
+    """
+    def testOverrideModelTask(self):
+        self.assertIsInstance(tasks.filter, CustomModelTask)

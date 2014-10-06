@@ -1,8 +1,12 @@
 # coding: utf-8
 from __future__ import absolute_import
 import json
+try:
+    from django.conf import settings as _settings
+except ImportError:
+    # No need django for celery_rpc client
+    _settings = object()
 
-from django.conf import settings as _settings
 from kombu.serialization import registry, bytes_t
 
 from .encoders import XJSONEncoder
@@ -24,6 +28,12 @@ registry.register('x-json', _json_dumps, _json_loads, 'application/json', 'utf-8
 FILTER_LIMIT = 1000
 # Default timeout for getting results
 GET_RESULT_TIMEOUT = 10
+
+# Provide ability to change base task class for celery-rpc server tasks.
+# Example: { 'ModelChangeTask': my.own.ModelChangeTask }
+# Key - symbolic class name, value - class with suitable interface.
+# Do it on your own risk!
+OVERRIDE_BASE_TASKS = {}
 
 # See Celery configuration parameters at
 # http://docs.celeryproject.org/en/latest/configuration.html
