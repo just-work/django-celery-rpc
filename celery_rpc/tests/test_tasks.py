@@ -49,7 +49,7 @@ class FilterTaskTests(BaseTaskTests):
 
     def testSerializerFields(self):
         expected = get_model_dict(self.models[0])
-        field = expected.keys()[0]
+        field = list(expected.keys())[0]
         r = tasks.filter.delay(self.MODEL_SYMBOL,
                                filters={'pk': expected['id']},
                                fields=[field])
@@ -155,8 +155,8 @@ class UpdateTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
         char_val = str(uuid4())
         expected = get_model_dict(self.models[0])
 
-        with self.assertRaisesRegexp(ModelTaskError,
-                                     r'No module named not.existing'):
+        with self.assertRaisesRegexp(
+                ModelTaskError, r'No module named (not\.existing|\'not\')'):
             self.task.delay(self.MODEL_SYMBOL,
                             {'char': char_val, 'id': expected['id']},
                             serializer_cls='not.existing.symbol').get()

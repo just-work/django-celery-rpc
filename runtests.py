@@ -2,6 +2,7 @@
 
 import sys
 from optparse import OptionParser
+import django
 
 from django.conf import settings
 
@@ -14,6 +15,9 @@ if not settings.configured:
 
 from django_nose import NoseTestSuiteRunner
 
+if django.VERSION >= (1, 7):
+    # New Apps loading mechanism
+    django.setup()
 
 def runtests(*test_args, **kwargs):
     if 'south' in settings.INSTALLED_APPS:
