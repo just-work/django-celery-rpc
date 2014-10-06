@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import django
 from django.db import router, transaction
+from django.utils import six
 
 from . import config, utils
 from .app import rpc
@@ -32,7 +33,7 @@ def filter(self, model, filters=None, offset=0,
     filters = filters if isinstance(filters, dict) else {}
     qs = self.default_queryset.filter(**filters)
     if order_by:
-        if isinstance(order_by, basestring):
+        if isinstance(order_by, six.string_types):
             qs = qs.order_by(order_by)
         elif isinstance(order_by, (list, tuple)):
             qs = qs.order_by(*order_by)
@@ -67,7 +68,7 @@ def atomic_commit_on_success(using=None):
     ver = django.VERSION
     if ver[0] == 1 and ver[1] < 6:
         return transaction.commit_on_success(using=using)
-    elif ver[0] == 1 and ver >= 6:
+    elif ver[0] == 1 and ver[1] >= 6:
         return transaction.atomic(using=using)
     else:
         raise RuntimeError('Invalid Django version: {}'.format(ver))
