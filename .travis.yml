@@ -15,4 +15,4 @@ install:
   - pip install Django==$DJANGO --use-mirrors
   - pip install -e . --use-mirrors
 
-script: run_tests.sh
+script: bash ./run_tests.sh
