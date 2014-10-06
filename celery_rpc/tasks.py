@@ -14,7 +14,7 @@ _base_model_task = get_base_task_class('ModelTask')
 
 @rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=_base_model_task,
           shared=False)
-def filter(self, model, filters=None, offset=0,
+def filter(self, model, filters=None, Q=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None, exclude=[],
            depth=0, manager='objects', database=None, serializer_cls=None,
            order_by=[], *args, **kwargs):
@@ -22,6 +22,7 @@ def filter(self, model, filters=None, offset=0,
 
     :param model: full name of model class like 'app.models:Model'
     :param filters: filter supported by model manager like {'pk__in': [1,2,3]}
+    :param Q: Django Q object like Q(Q(id__in=[1,2]) | Q(...) & Q(...))
     :param offset: offset of first item in the queryset (by default 0)
     :param limit: max number of result list (by default 1000)
     :param fields: shrink serialized fields of result
