@@ -32,7 +32,10 @@ def filter(self, model, filters=None, Q=None, offset=0,
 
     """
     filters = filters if isinstance(filters, dict) else {}
-    qs = self.default_queryset.filter(**filters)
+    if Q:
+        qs = self.default_queryset.filter(Q, **filters)
+    else:
+        qs = self.default_queryset.filter(**filters)
     if order_by:
         if isinstance(order_by, six.string_types):
             qs = qs.order_by(order_by)
