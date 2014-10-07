@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import django
 from django.db import router, transaction
+from django.db.models import Q
 
 from . import config, utils
 from .app import rpc
@@ -14,7 +15,7 @@ _base_model_task = get_base_task_class('ModelTask')
 
 @rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=_base_model_task,
           shared=False)
-def filter(self, model, filters=None, Q=None, offset=0,
+def filter(self, model, filters=None, Q=Q(), offset=0,
            limit=config.FILTER_LIMIT, fields=None, exclude=[],
            depth=0, manager='objects', database=None, serializer_cls=None,
            order_by=[], *args, **kwargs):
@@ -31,10 +32,7 @@ def filter(self, model, filters=None, Q=None, offset=0,
 
     """
     filters = filters if isinstance(filters, dict) else {}
-    if Q:
-        qs = self.default_queryset.filter(Q, **filters)
-    else:
-        qs = self.default_queryset.filter(**filters)
+    qs = self.default_queryset.filter(Q, **filters)
     if order_by:
         if isinstance(order_by, basestring):
             qs = qs.order_by(order_by)
