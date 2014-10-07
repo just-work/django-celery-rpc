@@ -103,13 +103,13 @@ Filtering with Q object
 
 ```
 from django.db.models import Q
-span_client.filter('app.models:MyModel', Q=(Q(a='1') | Q(b='1'))
+span_client.filter('app.models:MyModel', q=(Q(a='1') | Q(b='1'))
 ```
 
 Also, we can use both Q and filter
 
 ```
-span_client.filter('app.models:MyModel', filter={'c__exact':'c'}, Q=(Q(a='1') | Q(b='1'))
+span_client.filter('app.models:MyModel', filter={'c__exact':'c'}, q=(Q(a='1') | Q(b='1'))
 ```
 
 List of all MyModel objects with high priority
