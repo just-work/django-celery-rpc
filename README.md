@@ -118,7 +118,6 @@ List of all MyModel objects with high priority
 span_client.filter('app.models:MyModel', high_priority=True)
 ```
 
-
 ## Run server instance
 
 ```python
