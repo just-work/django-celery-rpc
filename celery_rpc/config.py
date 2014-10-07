@@ -21,7 +21,6 @@ def _json_loads(obj):
         obj = obj.decode()
     return json.loads(obj)
 
-
 registry.register('x-rpc-json', _json_dumps, _json_loads, 'application/json', 'utf-8')
 
 # Default limit for results of filter call
