@@ -8,6 +8,12 @@ try:
 except ImportError:
     pass
 
+import sys
+if sys.version_info >= (3, 0):
+    AUTOFIXTURE_VERSION = "0.9.1"
+else:
+    AUTOFIXTURE_VERSION = "0.3.2"
+
 setup(
     name='django-celery-rpc',
     version='0.16',
@@ -28,6 +34,7 @@ setup(
     ],
     setup_requires=[
         'nose>=1.0',
+        'six'
     ],
     tests_require=[
         'django >=1.3, <1.8',
