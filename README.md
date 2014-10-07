@@ -93,11 +93,31 @@ eggs_client = Client(CELERY_RPC_EGGS_CLIENT)
 
 ## Using client
 
+Filtering
+
+```
+span_client.filter('app.models:MyModel', filter={'a__exact':'a'})
+```
+
+Filtering with Q object
+
+```
+from django.db.models import Q
+span_client.filter('app.models:MyModel', Q=(Q(a='1') | Q(b='1'))
+```
+
+Also, we can use both Q and filter
+
+```
+span_client.filter('app.models:MyModel', filter={'c__exact':'c'}, Q=(Q(a='1') | Q(b='1'))
+```
+
 List of all MyModel objects with high priority
 
 ```
 span_client.filter('app.models:MyModel', high_priority=True)
 ```
+
 
 ## Run server instance
 
