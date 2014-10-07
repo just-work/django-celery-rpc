@@ -50,27 +50,37 @@ class FilterTaskTests(BaseTaskTests):
         self.assertEquals(expected, r.get()[0])
 
     def testQObject(self):
-        expected_1 = get_model_dict(self.models[0])
-        expected_2 = get_model_dict(self.models[1])
-        q_obj = (Q(pk=expected_1['id']) | Q(pk=expected_2['id']))
-        r = tasks.filter.delay(self.MODEL_SYMBOL, Q=q_obj)
+        expected_1 = get_model_dict(self.models[2])
+        expected_2 = get_model_dict(self.models[4])
+        q = (Q(pk=expected_1['id']) | Q(pk=expected_2['id']))
+        r = tasks.filter.delay(self.MODEL_SYMBOL, q=q.__dict__)
+
+        self.assertEquals(len(r.get()), 2)
         self.assertEquals(expected_1, r.get()[0])
         self.assertEquals(expected_2, r.get()[1])
 
     def testQObjectWithChildren(self):
         expected_1 = get_model_dict(self.models[0])
-        expected_2 = get_model_dict(self.models[1])
+        expected_2 = get_model_dict(self.models[4])
+
         q_1 = Q(pk=expected_1['id'])
-        q_obj = (q_1 | Q(pk=expected_2['id']))
-        r = tasks.filter.delay(self.MODEL_SYMBOL, Q=q_obj)
+        q = (q_1 | Q(pk=expected_2['id']))
+
+        r = tasks.filter.delay(self.MODEL_SYMBOL, q=q.__dict__)
+
+        self.assertEquals(len(r.get()), 2)
         self.assertEquals(expected_1, r.get()[0])
         self.assertEquals(expected_2, r.get()[1])
 
     def testQObjectWithDateTime(self):
-        expected_1 = get_model_dict(self.models[0])
+        expected_1 = get_model_dict(self.models[4])
+
         q_1 = Q(pk=expected_1['id'])
-        q_obj = (q_1 & Q(datetime__gte=datetime(2012, 1, 1)))
-        r = tasks.filter.delay(self.MODEL_SYMBOL, Q=q_obj)
+        q = (q_1 & Q(datetime__gte=datetime(2012, 1, 1)))
+
+        r = tasks.filter.delay(self.MODEL_SYMBOL, q=q.__dict__)
+
+        self.assertEquals(len(r.get()), 1)
         self.assertEquals(expected_1, r.get()[0])
 
     def testEmptyQObject(self):
