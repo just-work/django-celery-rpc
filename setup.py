@@ -40,7 +40,7 @@ setup(
         'django >=1.3, <1.8',
         'djangorestframework >= 2.3, <2.4',
         'django-nose>=0.1.3',
-        'django-autofixture==0.3.2',
+        'django-autofixture==%s' % AUTOFIXTURE_VERSION,
         'mock==1.0.1',
     ],
     test_suite='runtests.runtests',
