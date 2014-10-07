@@ -84,17 +84,20 @@ class FilterTaskTests(BaseTaskTests):
         self.assertEquals(expected_1, r.get()[0])
 
     def testEmptyQObject(self):
-        expected = get_model_dict(self.models[0])
+        expected = get_model_dict(self.models[2])
         r = tasks.filter.delay(self.MODEL_SYMBOL,
                                filters={'pk': expected['id']},
-                               Q=Q())
+                               q={})
+        self.assertEquals(len(r.get()), 1)
         self.assertEquals(expected, r.get()[0])
 
     def testQObjectWithFilter(self):
         expected = get_model_dict(self.models[0])
+        q = Q(datetime__lte=datetime.now())
         r = tasks.filter.delay(self.MODEL_SYMBOL,
                                filters={'pk': expected['id']},
-                               Q=Q(datetime__lte=datetime.now()))
+                               q=q.__dict__)
+        self.assertEquals(len(r.get()), 1)
         self.assertEquals(expected, r.get()[0])
 
     def testSerializerFields(self):
