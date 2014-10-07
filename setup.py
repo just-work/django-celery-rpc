@@ -34,7 +34,7 @@ setup(
     ],
     setup_requires=[
         'nose>=1.0',
-        'six>=1.8.0,<1.9'
+        'six'
     ],
     tests_require=[
         'django >=1.3, <1.8',
