@@ -16,31 +16,25 @@ _base_model_task = get_base_task_class('ModelTask')
 
 @rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=_base_model_task,
           shared=False)
-def filter(self, model, filters=None, q=None, offset=0,
+def filter(self, model, filters=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None, exclude=[],
            depth=0, manager='objects', database=None, serializer_cls=None,
-           order_by=[], *args, **kwargs):
+           order_by=[], filter_q=Q(), *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model: full name of model class like 'app.models:Model'
     :param filters: filter supported by model manager like {'pk__in': [1,2,3]}
-    :param q: encoded Q object in python dict. 'q = Q(field='val'); q.__dict__'
     :param offset: offset of first item in the queryset (by default 0)
     :param limit: max number of result list (by default 1000)
     :param fields: shrink serialized fields of result
     :param order_by: order of result list (list, tuple or string), default = []
+    :param filter_q: Django Q object
     :return: list of serialized model data
 
     """
     filters = filters if isinstance(filters, dict) else {}
+    qs = self.default_queryset.filter(filter_q, **filters)
 
-    if q and isinstance(q, dict):
-        q_obj = Q()
-        q_obj.__dict__ = q
-    else:
-        q_obj = Q()
-
-    qs = self.default_queryset.filter(q_obj, **filters)
     if order_by:
         if isinstance(order_by, six.string_types):
             qs = qs.order_by(order_by)

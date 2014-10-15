@@ -53,7 +53,7 @@ class FilterTaskTests(BaseTaskTests):
         expected_1 = get_model_dict(self.models[2])
         expected_2 = get_model_dict(self.models[4])
         q = (Q(pk=expected_1['id']) | Q(pk=expected_2['id']))
-        r = tasks.filter.delay(self.MODEL_SYMBOL, q=q.__dict__)
+        r = tasks.filter.delay(self.MODEL_SYMBOL, filter_q=q)
 
         self.assertEquals(len(r.get()), 2)
         self.assertEquals(expected_1, r.get()[0])
@@ -66,7 +66,7 @@ class FilterTaskTests(BaseTaskTests):
         q_1 = Q(pk=expected_1['id'])
         q = (q_1 | Q(pk=expected_2['id']))
 
-        r = tasks.filter.delay(self.MODEL_SYMBOL, q=q.__dict__)
+        r = tasks.filter.delay(self.MODEL_SYMBOL, filter_q=q)
 
         self.assertEquals(len(r.get()), 2)
         self.assertEquals(expected_1, r.get()[0])
@@ -78,7 +78,7 @@ class FilterTaskTests(BaseTaskTests):
         q_1 = Q(pk=expected_1['id'])
         q = (q_1 & Q(datetime__gte=datetime(2012, 1, 1)))
 
-        r = tasks.filter.delay(self.MODEL_SYMBOL, q=q.__dict__)
+        r = tasks.filter.delay(self.MODEL_SYMBOL, filter_q=q)
 
         self.assertEquals(len(r.get()), 1)
         self.assertEquals(expected_1, r.get()[0])
@@ -86,8 +86,7 @@ class FilterTaskTests(BaseTaskTests):
     def testEmptyQObject(self):
         expected = get_model_dict(self.models[2])
         r = tasks.filter.delay(self.MODEL_SYMBOL,
-                               filters={'pk': expected['id']},
-                               q={})
+                               filters={'pk': expected['id']})
         self.assertEquals(len(r.get()), 1)
         self.assertEquals(expected, r.get()[0])
 
@@ -96,7 +95,7 @@ class FilterTaskTests(BaseTaskTests):
         q = Q(datetime__lte=datetime.now())
         r = tasks.filter.delay(self.MODEL_SYMBOL,
                                filters={'pk': expected['id']},
-                               q=q.__dict__)
+                               filter_q=q)
         self.assertEquals(len(r.get()), 1)
         self.assertEquals(expected, r.get()[0])
 
