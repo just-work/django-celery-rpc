@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 try:
     from django.utils.functional import Promise
     from django.utils.encoding import force_unicode
+    from django.db.models import Q
     has_django = True
 except ImportError:
     has_django = False
@@ -52,6 +53,8 @@ class XJSONEncoder(json.JSONEncoder):
         def default(self, o):
             if isinstance(o, Promise):
                 return force_unicode(o)
+            elif isinstance(o, Q):
+                return o.__dict__
             else:
                 return self._default(o)
     else:
