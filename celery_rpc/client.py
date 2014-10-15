@@ -75,7 +75,6 @@ class Client(object):
             if server support prioritization, by default False
         :param kwargs: optional parameters of request
             filters - dict of terms compatible with django database query
-            q - django Q instance
             offset - offset from which return a results
             limit - max number of results
             fields - list of serializer fields, which will be returned
