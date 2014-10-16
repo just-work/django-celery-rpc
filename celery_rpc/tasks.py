@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import django
 from django.db import router, transaction
+from django.db.models import Q
 import six
 
 from . import config, utils
@@ -18,7 +19,7 @@ _base_model_task = get_base_task_class('ModelTask')
 def filter(self, model, filters=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None, exclude=[],
            depth=0, manager='objects', database=None, serializer_cls=None,
-           order_by=[], *args, **kwargs):
+           order_by=[], filter_q=Q(), *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model: full name of model class like 'app.models:Model'
@@ -27,11 +28,13 @@ def filter(self, model, filters=None, offset=0,
     :param limit: max number of result list (by default 1000)
     :param fields: shrink serialized fields of result
     :param order_by: order of result list (list, tuple or string), default = []
+    :param filter_q: Django Q object
     :return: list of serialized model data
 
     """
     filters = filters if isinstance(filters, dict) else {}
-    qs = self.default_queryset.filter(**filters)
+    qs = self.default_queryset.filter(filter_q, **filters)
+
     if order_by:
         if isinstance(order_by, six.string_types):
             qs = qs.order_by(order_by)

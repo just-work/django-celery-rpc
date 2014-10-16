@@ -1,10 +1,12 @@
 from __future__ import absolute_import
 from random import randint
+from datetime import datetime
 
 from uuid import uuid4
 
 from autofixture import AutoFixture
 from django.test import TestCase
+from django.db.models import Q
 from rest_framework import serializers
 
 from .. import tasks
@@ -45,6 +47,56 @@ class FilterTaskTests(BaseTaskTests):
         expected = get_model_dict(self.models[0])
         r = tasks.filter.delay(self.MODEL_SYMBOL,
                                filters={'pk': expected['id']})
+        self.assertEquals(expected, r.get()[0])
+
+    def testQObject(self):
+        expected_1 = get_model_dict(self.models[2])
+        expected_2 = get_model_dict(self.models[4])
+        q = (Q(pk=expected_1['id']) | Q(pk=expected_2['id']))
+        r = tasks.filter.delay(self.MODEL_SYMBOL, filter_q=q)
+
+        self.assertEquals(len(r.get()), 2)
+        self.assertEquals(expected_1, r.get()[0])
+        self.assertEquals(expected_2, r.get()[1])
+
+    def testQObjectWithChildren(self):
+        expected_1 = get_model_dict(self.models[0])
+        expected_2 = get_model_dict(self.models[4])
+
+        q_1 = Q(pk=expected_1['id'])
+        q = (q_1 | Q(pk=expected_2['id']))
+
+        r = tasks.filter.delay(self.MODEL_SYMBOL, filter_q=q)
+
+        self.assertEquals(len(r.get()), 2)
+        self.assertEquals(expected_1, r.get()[0])
+        self.assertEquals(expected_2, r.get()[1])
+
+    def testQObjectWithDateTime(self):
+        expected_1 = get_model_dict(self.models[4])
+
+        q_1 = Q(pk=expected_1['id'])
+        q = (q_1 & Q(datetime__gte=datetime(2012, 1, 1)))
+
+        r = tasks.filter.delay(self.MODEL_SYMBOL, filter_q=q)
+
+        self.assertEquals(len(r.get()), 1)
+        self.assertEquals(expected_1, r.get()[0])
+
+    def testEmptyQObject(self):
+        expected = get_model_dict(self.models[2])
+        r = tasks.filter.delay(self.MODEL_SYMBOL,
+                               filters={'pk': expected['id']})
+        self.assertEquals(len(r.get()), 1)
+        self.assertEquals(expected, r.get()[0])
+
+    def testQObjectWithFilter(self):
+        expected = get_model_dict(self.models[0])
+        q = Q(datetime__lte=datetime.now())
+        r = tasks.filter.delay(self.MODEL_SYMBOL,
+                               filters={'pk': expected['id']},
+                               filter_q=q)
+        self.assertEquals(len(r.get()), 1)
         self.assertEquals(expected, r.get()[0])
 
     def testSerializerFields(self):

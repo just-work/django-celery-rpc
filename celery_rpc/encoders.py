@@ -3,15 +3,17 @@ from __future__ import unicode_literals
 try:
     from django.utils.functional import Promise
     from django.utils.encoding import force_unicode
+    from django.db.models import Q
     has_django = True
 except ImportError:
     has_django = False
 import datetime
 import decimal
 import json
+import jsonpickle
 
 
-class XJSONEncoder(json.JSONEncoder):
+class RpcJsonEncoder(json.JSONEncoder):
     """
     JSONEncoder subclass that knows how to encode date/time/timedelta,
     decimal types, and generators.
@@ -45,13 +47,15 @@ class XJSONEncoder(json.JSONEncoder):
             return o.tolist()
         elif hasattr(o, '__iter__'):
             return [i for i in o]
-        return super(XJSONEncoder, self).default(o)
+        return super(RpcJsonEncoder, self).default(o)
 
     if has_django:
         # Handling django-specific classes only if django package is installed
         def default(self, o):
             if isinstance(o, Promise):
                 return force_unicode(o)
+            elif isinstance(o, Q):
+                return jsonpickle.encode(o)
             else:
                 return self._default(o)
     else:
