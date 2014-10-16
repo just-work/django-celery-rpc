@@ -16,7 +16,7 @@ else:
 
 setup(
     name='django-celery-rpc',
-    version='0.16',
+    version='0.17',
     packages=find_packages(),
     url='https://github.com/ttyS15/django-celery-rpc',
     license='Public',
@@ -26,6 +26,7 @@ setup(
                 'another one using Celery machinery.',
     install_requires=[
         'celery >=3.1.5, <3.2.0',
+        'jsonpickle>=0.8.0',
         'six',
         # celery_rpc server still needs django and djangorestframework packages,
         # but they are unnecessary for client

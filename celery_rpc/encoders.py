@@ -9,6 +9,7 @@ except ImportError:
 import datetime
 import decimal
 import json
+import jsonpickle
 
 
 class XJSONEncoder(json.JSONEncoder):
@@ -52,6 +53,8 @@ class XJSONEncoder(json.JSONEncoder):
         def default(self, o):
             if isinstance(o, Promise):
                 return force_unicode(o)
+            elif isinstance(o, Q):
+                return jsonpickle.encode(o)
             else:
                 return self._default(o)
     else:

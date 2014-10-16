@@ -10,19 +10,20 @@ except ImportError:
 from kombu.serialization import registry, bytes_t
 
 from .encoders import XJSONEncoder
+from .decoders import x_json_decoder_object_hook
 
 
 # Register enhanced json encoder
 def _json_dumps(obj):
     return json.dumps(obj, cls=XJSONEncoder)
-    
+
 def _json_loads(obj):
     if isinstance(obj, bytes_t):
         obj = obj.decode()
-    return json.loads(obj)
+    return json.loads(obj, object_hook=x_json_decoder_object_hook)
 
 
-registry.register('x-json', _json_dumps, _json_loads, 'application/json', 'utf-8')
+registry.register('x-rpc-json', _json_dumps, _json_loads, 'application/json', 'utf-8')
 
 # Default limit for results of filter call
 FILTER_LIMIT = 1000
@@ -49,8 +50,9 @@ CELERY_DEFAULT_ROUTING_KEY = 'celery_rpc'
 BROKER_TRANSPORT_OPTIONS = {'confirm_publish': True}
 
 CELERY_ACKS_LATE = True
-CELERY_TASK_SERIALIZER = 'x-json'
-CELERY_RESULT_SERIALIZER = 'x-json'
+CELERY_TASK_SERIALIZER = 'x-rpc-json'
+CELERY_RESULT_SERIALIZER = 'x-rpc-json'
+
 
 # Options can be overridden by CELERY_RPC_CONFIG dict in Django settings.py
 _CONFIG = getattr(_settings, 'CELERY_RPC_CONFIG', {})

@@ -80,6 +80,7 @@ class Client(object):
             fields - list of serializer fields, which will be returned
             order_by - order of results (list, tuple or string),
                 minus ('-') set reverse order, default = []
+            filter_q - django Q instance
         :param **options: optional parameter of apply_async
         :return: list of filtered objects or AsyncResult if async is True
         :raise: see get_result()
