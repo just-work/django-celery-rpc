@@ -13,7 +13,7 @@ import json
 import jsonpickle
 
 
-class XJSONEncoder(json.JSONEncoder):
+class RpcJsonEncoder(json.JSONEncoder):
     """
     JSONEncoder subclass that knows how to encode date/time/timedelta,
     decimal types, and generators.
@@ -47,7 +47,7 @@ class XJSONEncoder(json.JSONEncoder):
             return o.tolist()
         elif hasattr(o, '__iter__'):
             return [i for i in o]
-        return super(XJSONEncoder, self).default(o)
+        return super(RpcJsonEncoder, self).default(o)
 
     if has_django:
         # Handling django-specific classes only if django package is installed

@@ -9,13 +9,13 @@ except ImportError:
 
 from kombu.serialization import registry, bytes_t
 
-from .encoders import XJSONEncoder
+from .encoders import RpcJsonEncoder
 from .decoders import x_json_decoder_object_hook
 
 
 # Register enhanced json encoder
 def _json_dumps(obj):
-    return json.dumps(obj, cls=XJSONEncoder)
+    return json.dumps(obj, cls=RpcJsonEncoder)
 
 def _json_loads(obj):
     if isinstance(obj, bytes_t):
