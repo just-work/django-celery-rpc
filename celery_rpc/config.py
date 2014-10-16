@@ -9,17 +9,18 @@ except ImportError:
 
 from kombu.serialization import registry, bytes_t
 
-from .encoders import XJSONEncoder
+from .encoders import RpcJsonEncoder
+from .decoders import x_json_decoder_object_hook
 
 
 # Register enhanced json encoder
 def _json_dumps(obj):
-    return json.dumps(obj, cls=XJSONEncoder)
+    return json.dumps(obj, cls=RpcJsonEncoder)
     
 def _json_loads(obj):
     if isinstance(obj, bytes_t):
         obj = obj.decode()
-    return json.loads(obj)
+    return json.loads(obj, object_hook=x_json_decoder_object_hook)
 
 
 registry.register('x-rpc-json', _json_dumps, _json_loads, 'application/json', 'utf-8')
@@ -59,4 +60,3 @@ locals().update(_CONFIG)
 
 CELERYD_TASK_SOFT_TIME_LIMIT = GET_RESULT_TIMEOUT + 1
 CELERYD_TASK_TIME_LIMIT = GET_RESULT_TIMEOUT * 2
-
