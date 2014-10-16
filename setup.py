@@ -28,6 +28,7 @@ setup(
         'celery >=3.1.5, <3.2.0',
         'jsonpickle>=0.8.0',
         'six',
+        'jsonpickle>=0.8.0',
         # celery_rpc server still needs django and djangorestframework packages,
         # but they are unnecessary for client
 
