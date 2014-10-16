@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 try:
     from django.utils.functional import Promise
     from django.utils.encoding import force_unicode
+    from django.db.models import Q
     has_django = True
 except ImportError:
     has_django = False
