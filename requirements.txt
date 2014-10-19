@@ -4,6 +4,7 @@ djangorestframework>=2.3,<2.4
 # For Django < 1.5:
 # django-autofixture==0.3.2
 # For Django >= 1.5:
-django-autofixture==0.9.1
+django-autofixture>=0.9.1
 mock==1.0.1
 six>=1.8.0,<1.9
+jsonpickle>=0.8.0

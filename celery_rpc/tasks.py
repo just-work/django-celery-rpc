@@ -19,22 +19,28 @@ _base_model_task = get_base_task_class('ModelTask')
 def filter(self, model, filters=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None, exclude=[],
            depth=0, manager='objects', database=None, serializer_cls=None,
-           order_by=[], filter_q=Q(), *args, **kwargs):
+           order_by=[], filters_Q=Q(), exclude_Q=Q(), *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model: full name of model class like 'app.models:Model'
-    :param filters: filter supported by model manager like {'pk__in': [1,2,3]}
+    :param filters: supported lookups for filter like {'pk__in': [1,2,3]}
     :param offset: offset of first item in the queryset (by default 0)
     :param limit: max number of result list (by default 1000)
     :param fields: shrink serialized fields of result
+    :param exclude: supported lookups for exclude like {'pk__in': [1,2,3]}
     :param order_by: order of result list (list, tuple or string), default = []
-    :param filter_q: Django Q object
+    :param filters_Q: Django Q object for filter()
+    :param exclude_Q: Django Q object for exclude()
     :return: list of serialized model data
 
     """
-    filters = filters if isinstance(filters, dict) else {}
-    qs = self.default_queryset.filter(filter_q, **filters)
-
+    qs = self.default_queryset
+    if filters or filters_Q:
+        filters = filters if isinstance(filters, dict) else {}
+        qs = qs.filter(filters_Q, **filters)
+    if exclude or exclude_Q:
+        exclude = exclude if isinstance(exclude, dict) else {}
+        qs = qs.exclude(exclude_Q, **exclude)
     if order_by:
         if isinstance(order_by, six.string_types):
             qs = qs.order_by(order_by)
@@ -42,7 +48,6 @@ def filter(self, model, filters=None, offset=0,
             qs = qs.order_by(*order_by)
     qs = qs[offset:offset+limit]
     return self.serializer_class(instance=qs, many=True).data
-
 
 
 _base_model_change_task = get_base_task_class('ModelChangeTask')

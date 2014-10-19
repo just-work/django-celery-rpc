@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 from random import randint
-from datetime import datetime
-
 from uuid import uuid4
 
 from autofixture import AutoFixture
@@ -30,57 +28,8 @@ class BaseTaskTests(TestCase):
 
 
 class FilterTaskTests(BaseTaskTests):
-
-    def testQObject(self):
-        expected_1 = get_model_dict(self.models[2])
-        expected_2 = get_model_dict(self.models[4])
-        q = (Q(pk=expected_1['id']) | Q(pk=expected_2['id']))
-        r = tasks.filter.delay(self.MODEL_SYMBOL, filter_q=q)
-
-        self.assertEquals(len(r.get()), 2)
-        self.assertEquals(expected_1, r.get()[0])
-        self.assertEquals(expected_2, r.get()[1])
-
-    def testQObjectWithChildren(self):
-        expected_1 = get_model_dict(self.models[0])
-        expected_2 = get_model_dict(self.models[4])
-
-        q_1 = Q(pk=expected_1['id'])
-        q = (q_1 | Q(pk=expected_2['id']))
-
-        r = tasks.filter.delay(self.MODEL_SYMBOL, filter_q=q)
-
-        self.assertEquals(len(r.get()), 2)
-        self.assertEquals(expected_1, r.get()[0])
-        self.assertEquals(expected_2, r.get()[1])
-
-    def testQObjectWithDateTime(self):
-        expected_1 = get_model_dict(self.models[4])
-
-        q_1 = Q(pk=expected_1['id'])
-        q = (q_1 & Q(datetime__gte=datetime(2012, 1, 1)))
-
-        r = tasks.filter.delay(self.MODEL_SYMBOL, filter_q=q)
-
-        self.assertEquals(len(r.get()), 1)
-        self.assertEquals(expected_1, r.get()[0])
-
-    def testEmptyQObject(self):
-        expected = get_model_dict(self.models[2])
-        r = tasks.filter.delay(self.MODEL_SYMBOL,
-                               filters={'pk': expected['id']})
-        self.assertEquals(len(r.get()), 1)
-        self.assertEquals(expected, r.get()[0])
-
-    def testQObjectWithFilter(self):
-        expected = get_model_dict(self.models[0])
-        q = Q(datetime__lte=datetime.now())
-        r = tasks.filter.delay(self.MODEL_SYMBOL,
-                               filters={'pk': expected['id']},
-                               filter_q=q)
-        self.assertEquals(len(r.get()), 1)
-        self.assertEquals(expected, r.get()[0])
-
+    """ Tests for selecting models located on RPC server.
+    """
 
     def testLimit(self):
         r = tasks.filter.delay(self.MODEL_SYMBOL)
@@ -99,6 +48,56 @@ class FilterTaskTests(BaseTaskTests):
         r = tasks.filter.delay(self.MODEL_SYMBOL,
                                filters={'pk': expected['id']})
         self.assertEquals(expected, r.get()[0])
+
+    def testFiltersWithQ(self):
+        expected = get_model_dict(self.models[0])
+        r = tasks.filter.delay(self.MODEL_SYMBOL,
+                               filters_Q=Q(pk=expected['id']))
+        self.assertEquals(expected, r.get()[0])
+
+    def testFiltersWithLookupsAndQ(self):
+        filter_ids = [m.id for m in self.models[3:]]
+        filter_Q = Q(pk__lte=self.models[3].pk)
+        r = tasks.filter.delay(self.MODEL_SYMBOL,
+                               filters={'pk__in': filter_ids},
+                               filters_Q=filter_Q)
+        expected = get_model_dict(self.models[3])
+        self.assertEquals(len(r.get()), 1)
+        self.assertEquals(expected, r.get()[0])
+
+    def testExclude(self):
+        """ Exclude seems good.
+        """
+        exclude_ids = [m.pk for m in self.models[1:]]
+        r = tasks.filter.delay(self.MODEL_SYMBOL,
+                               exclude={'pk__in': exclude_ids})
+        expected = get_model_dict(self.models[0])
+        self.assertEquals(expected, r.get()[0])
+
+    def testExcludeWithQ(self):
+        """ Exclude with Q-object works nice.
+        """
+        r = tasks.filter.delay(self.MODEL_SYMBOL,
+                               exclude_q=Q(pk__gte=self.models[1].pk))
+        expected = get_model_dict(self.models[0])
+        self.assertEquals(expected, r.get()[0])
+
+    def testExcludeWithLookupsAndQ(self):
+        """ Exclude all except first and last by mix of `exclude` and
+        `exclude_Q` seems able.
+        """
+        exclude_char = [m.char for m in self.models[1:]]
+        exclude_Q = Q(pk__lte=self.models[3].pk)
+        r = tasks.filter.delay(self.MODEL_SYMBOL,
+                               exclude={'char__in': exclude_char},
+                               exclude_Q=exclude_Q)
+
+        result = r.get()
+        self.assertEquals(len(result), 2)
+        for i in 4, 0:
+            expected = get_model_dict(self.models[i])
+            r = result.pop()
+            self.assertEquals(expected, r)
 
     def testSerializerFields(self):
         expected = get_model_dict(self.models[0])

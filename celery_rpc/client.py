@@ -78,9 +78,12 @@ class Client(object):
             offset - offset from which return a results
             limit - max number of results
             fields - list of serializer fields, which will be returned
+            exclude - lookups for excluding matched models
             order_by - order of results (list, tuple or string),
                 minus ('-') set reverse order, default = []
-            filter_q - django Q instance
+            filters_Q - django Q-object for filtering models
+            exclude_Q - django Q-object for excluding matched models
+
         :param **options: optional parameter of apply_async
         :return: list of filtered objects or AsyncResult if async is True
         :raise: see get_result()

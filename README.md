@@ -96,21 +96,42 @@ eggs_client = Client(CELERY_RPC_EGGS_CLIENT)
 Filtering
 
 ```
-span_client.filter('app.models:MyModel', filter={'a__exact':'a'})
+span_client.filter('app.models:MyModel', kwargs=dict(filter={'a__exact':'a'}))
 ```
 
 Filtering with Q object
 
 ```
 from django.db.models import Q
-span_client.filter('app.models:MyModel', filter_q=(Q(a='1') | Q(b='1'))
+span_client.filter('app.models:MyModel', kwargs=dict(filters_Q=(Q(a='1') | Q(b='1')))
 ```
 
-Also, we can use both Q and filter
+Also, we can use both Q and lookups
 
 ```
-span_client.filter('app.models:MyModel', filter={'c__exact':'c'}, filter_q=(Q(a='1') | Q(b='1'))
+span_client.filter('app.models:MyModel', kwargs=dict(filter={'c__exact':'c'}, filters_Q=(Q(a='1') | Q(b='1')))
 ```
+
+Exclude supported
+
+```
+span_client.filter('app.models:MyModel', kwargs=dict(exclude={'c__exact':'c'}, exclude_Q=(Q(a='1') | Q(b='1')))
+```
+
+You can mix filters and exclude, Q-object with lookups. Try it yourself. ;)
+
+Full list of available kwargs:
+
+    filters - dict of terms compatible with django lookup fields
+    offset - offset from which return a results
+    limit - max number of results
+    fields - list of serializer fields, which will be returned
+    exclude - lookups for excluding matched models
+    order_by - order of results (list, tuple or string),
+        minus ('-') set reverse order, default = []
+    filters_Q - django Q-object for filtering models
+    exclude_Q - django Q-object for excluding matched models
+
 
 List of all MyModel objects with high priority
 
@@ -161,5 +182,6 @@ Supported class names: ModelTask, ModelChangeTask, FunctionTask
 ## TODO
 
  - Set default non-generic model serializer.
- - Test support for RPC result backend from Celery
+ - Test support for RPC result backend from Celery.
  - Token auth and permissions support (like DRF).
+ - Resource map and strict mode.
