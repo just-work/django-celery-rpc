@@ -10,7 +10,7 @@ from kombu.utils.encoding import bytes_t
 try:
     # Django support
     from django.utils.functional import Promise
-    from django.utils.encoding import force_unicode
+    from django.utils.encoding import smart_str
     from django.db.models import Q
 
     has_django = True
@@ -59,7 +59,7 @@ class RpcJsonEncoder(json.JSONEncoder):
         # Handling django-specific classes only if django package is installed
         def default(self, o):
             if isinstance(o, Promise):
-                return force_unicode(o)
+                return smart_str(o)
             elif isinstance(o, Q):
                 return jsonpickle.encode(o)
             else:

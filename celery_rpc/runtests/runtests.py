@@ -26,9 +26,7 @@ def usage():
 
 
 def main():
-    TestRunner = get_runner(settings)
 
-    test_runner = TestRunner()
     if len(sys.argv) == 2:
         test_case = '.' + sys.argv[1]
     elif len(sys.argv) == 1:
@@ -36,9 +34,17 @@ def main():
     else:
         print(usage())
         sys.exit(1)
+
     test_module_name = 'celery_rpc.tests'
     if django.VERSION[0] == 1 and django.VERSION[1] < 6:
         test_module_name = 'tests'
+
+    if django.VERSION >= (1, 7):
+        # New Apps loading mechanism
+        django.setup()
+
+    TestRunner = get_runner(settings)
+    test_runner = TestRunner()
 
     failures = test_runner.run_tests([test_module_name + test_case])
 
