@@ -1,29 +1,19 @@
 # coding: utf-8
 from __future__ import absolute_import
-import json
+
+
 try:
     from django.conf import settings as _settings
 except ImportError:
     # No need django for celery_rpc client
     _settings = object()
 
-from kombu.serialization import registry, bytes_t
+from kombu.serialization import registry
 
-from .encoders import RpcJsonEncoder
-from .decoders import x_json_decoder_object_hook
+from .codecs import x_rpc_json_dumps, x_rpc_json_loads
 
-
-# Register enhanced json encoder
-def _json_dumps(obj):
-    return json.dumps(obj, cls=RpcJsonEncoder)
-
-def _json_loads(obj):
-    if isinstance(obj, bytes_t):
-        obj = obj.decode()
-    return json.loads(obj, object_hook=x_json_decoder_object_hook)
-
-
-registry.register('x-rpc-json', _json_dumps, _json_loads, 'application/json', 'utf-8')
+registry.register('x-rpc-json', x_rpc_json_dumps, x_rpc_json_loads,
+                  'application/x-celery-rpc-json', 'utf-8')
 
 # Default limit for results of filter call
 FILTER_LIMIT = 1000

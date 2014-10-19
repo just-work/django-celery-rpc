@@ -3,7 +3,6 @@ Force import of all modules in this package in order to get the standard test
 runner to pick up the tests.  Yowzers.
 """
 
-from __future__ import unicode_literals
 import os
 import django
 
