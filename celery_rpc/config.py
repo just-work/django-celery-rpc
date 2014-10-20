@@ -36,7 +36,6 @@ CELERY_ACCEPT_CONTENT = ['json', 'x-json', 'x-rpc-json']
 CELERY_TASK_SERIALIZER = 'x-json'
 CELERY_RESULT_SERIALIZER = 'x-json'
 
-
 # Options can be overridden by CELERY_RPC_CONFIG dict in Django settings.py
 _CONFIG = getattr(_settings, 'CELERY_RPC_CONFIG', {})
 
