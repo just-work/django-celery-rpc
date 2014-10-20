@@ -1,19 +1,11 @@
 # coding: utf-8
 from __future__ import absolute_import
 
-
 try:
     from django.conf import settings as _settings
 except ImportError:
     # No need django for celery_rpc client
     _settings = object()
-
-from kombu.serialization import registry
-
-from .codecs import x_rpc_json_dumps, x_rpc_json_loads
-
-registry.register('x-rpc-json', x_rpc_json_dumps, x_rpc_json_loads,
-                  'application/x-celery-rpc-json', 'utf-8')
 
 # Default limit for results of filter call
 FILTER_LIMIT = 1000
@@ -40,8 +32,9 @@ CELERY_DEFAULT_ROUTING_KEY = 'celery_rpc'
 BROKER_TRANSPORT_OPTIONS = {'confirm_publish': True}
 
 CELERY_ACKS_LATE = True
-CELERY_TASK_SERIALIZER = 'x-rpc-json'
-CELERY_RESULT_SERIALIZER = 'x-rpc-json'
+CELERY_ACCEPT_CONTENT = ['json', 'x-json', 'x-rpc-json']
+CELERY_TASK_SERIALIZER = 'x-json'
+CELERY_RESULT_SERIALIZER = 'x-json'
 
 
 # Options can be overridden by CELERY_RPC_CONFIG dict in Django settings.py
@@ -51,4 +44,10 @@ locals().update(_CONFIG)
 
 CELERYD_TASK_SOFT_TIME_LIMIT = GET_RESULT_TIMEOUT + 1
 CELERYD_TASK_TIME_LIMIT = GET_RESULT_TIMEOUT * 2
+
+_codecs_registered = False
+if not _codecs_registered:
+    from .codecs import register_codecs
+    register_codecs()
+    _codecs_registered = True
 

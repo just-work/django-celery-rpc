@@ -68,6 +68,21 @@ class RpcJsonEncoder(json.JSONEncoder):
         default = _default
 
 
+class XJsonEncoder(RpcJsonEncoder):
+    """ Backward compatibility for task serializing.
+    """
+
+    if has_django:
+        def default(self, o):
+            if isinstance(o, Q):
+                raise RuntimeError("Django Q-objects does not supported by "
+                                   "'x-json' codec. For running with Q-objects "
+                                   "use celery_rpc>0.16 on both sides and "
+                                   "set 'x-rpc-json' as task serializer for "
+                                   "client")
+            return super(XJsonEncoder, self).default(o)
+
+
 class RpcJsonDecoder(json.JSONDecoder):
     """ Add support for Django Q-objects in dicts
     """
@@ -88,7 +103,6 @@ class RpcJsonDecoder(json.JSONDecoder):
                 val[k] = jsonpickle.decode(v)
         return val
 
-
 def x_rpc_json_dumps(obj):
     return json.dumps(obj, cls=RpcJsonEncoder)
 
@@ -97,3 +111,24 @@ def x_rpc_json_loads(s):
     if isinstance(s, bytes_t):
         s = s.decode()
     return json.loads(s, cls=RpcJsonDecoder)
+
+
+# XXX: Compatibility for versions <= 0.16
+def x_json_dumps(obj):
+    return json.dumps(obj, cls=XJsonEncoder)
+
+
+# XXX: Compatibility for versions <= 0.16
+def x_json_loads(s):
+    if isinstance(s, bytes_t):
+        s = s.decode()
+    return json.loads(s)
+
+
+def register_codecs():
+    from kombu.serialization import registry
+    registry.register('x-rpc-json', x_rpc_json_dumps, x_rpc_json_loads,
+                      'application/json+celery-rpc:v1', 'utf-8')
+    # XXX: Compatibility for ver <= 0.16
+    registry.register('x-json', x_json_dumps, x_json_loads,
+                      'application/json', 'utf-8')

@@ -14,7 +14,7 @@ class RpcJsonCodecTests(TestCase):
         """ Encode with correct content-type.
         """
         serialized = serialization.dumps(None, 'x-rpc-json')
-        self.assertEqual('application/x-celery-rpc-json', serialized[0])
+        self.assertEqual('application/json+celery-rpc:v1', serialized[0])
 
     def testSupportQ(self):
         """ Encoder/Decoder support Django Q-object
