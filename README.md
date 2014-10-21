@@ -15,11 +15,12 @@ Relies on three outstanding python projects:
 
 Client and server are designed to:
 
- - filter models with Django ORM lookups;
+ - filter models with Django ORM lookups, Q-objects and excludes;
  - change model state (create, update, update or create, delete);
  - change model state in bulk mode (more than one object per request);
  - atomic get-set model state with bulk mode support;
  - call function;
+ - client does not require Django;
 
 ## Basic Configuration
 
@@ -185,3 +186,14 @@ Supported class names: ModelTask, ModelChangeTask, FunctionTask
  - Test support for RPC result backend from Celery.
  - Token auth and permissions support (like DRF).
  - Resource map and strict mode.
+ - 
+ 
+## Acknowledgements
+
+Thanks for all who contributing to this project:
+ - https://github.com/tumbler
+ - https://github.com/voron3x
+ - https://github.com/dtrst
+ - https://github.com/anatoliy-larin
+ - https://github.com/bourivouh
+ - https://github.com/tumb1er
