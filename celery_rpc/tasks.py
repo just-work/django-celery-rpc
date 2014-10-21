@@ -198,3 +198,24 @@ def call(self, function, args, kwargs):
             type(args))
         raise TypeError(message)
     return self.function(*args, **kwargs)
+
+
+@rpc.task(name=utils.PIPE_TASK_NAME, bind=True, shared=False)
+def pipe(self, pipeline):
+    """ Handle pipeline and return results
+    :param pipeline: List of pipelined requests.
+    :return: list of results of each request.
+    """
+    result = []
+    r = None
+    for t in pipeline:
+        task = self.app.tasks[t['name']]
+        args = t['args']
+        if t['options'].get('transformer'):
+            if not hasattr(args, 'append'):
+                args = list(args)
+            args.append(r)
+        r = task.apply(args=args, kwargs=t['kwargs']).get()
+        result.append(r)
+
+    return result
