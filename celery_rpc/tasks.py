@@ -19,7 +19,7 @@ _base_model_task = get_base_task_class('ModelTask')
 def filter(self, model, filters=None, offset=0,
            limit=config.FILTER_LIMIT, fields=None, exclude=[],
            depth=0, manager='objects', database=None, serializer_cls=None,
-           order_by=[], filters_Q=Q(), exclude_Q=Q(), *args, **kwargs):
+           order_by=[], filters_Q=None, exclude_Q=None, *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model: full name of model class like 'app.models:Model'
@@ -35,17 +35,22 @@ def filter(self, model, filters=None, offset=0,
 
     """
     qs = self.default_queryset
-    if filters or filters_Q:
+    if filters_Q and isinstance(filters_Q, Q):
+        qs = qs.filter(filters_Q)
+    if filters:
         filters = filters if isinstance(filters, dict) else {}
-        qs = qs.filter(filters_Q, **filters)
-    if exclude or exclude_Q:
+        qs = qs.filter(**filters)
+    if exclude_Q and isinstance(exclude_Q, Q):
+        qs = qs.exclude(exclude_Q)
+    if exclude:
         exclude = exclude if isinstance(exclude, dict) else {}
-        qs = qs.exclude(exclude_Q, **exclude)
+        qs = qs.exclude(**exclude)
     if order_by:
         if isinstance(order_by, six.string_types):
             qs = qs.order_by(order_by)
         elif isinstance(order_by, (list, tuple)):
             qs = qs.order_by(*order_by)
+    import ipdb; ipdb.set_trace()
     qs = qs[offset:offset+limit]
     return self.serializer_class(instance=qs, many=True).data
 
