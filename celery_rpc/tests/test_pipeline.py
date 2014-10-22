@@ -2,14 +2,14 @@
 from __future__ import absolute_import
 from unittest import expectedFailure
 
-from django.test import TestCase
+from django.test import TransactionTestCase
 
 from ..client import Pipe, Client
 from .utils import SimpleModelTestMixin
 from .models import SimpleModel
 
 
-class PipelineTests(SimpleModelTestMixin, TestCase):
+class PipelineTests(SimpleModelTestMixin, TransactionTestCase):
     """ Pipeline related tests.
     """
 
