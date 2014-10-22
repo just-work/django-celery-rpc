@@ -35,22 +35,19 @@ def filter(self, model, filters=None, offset=0,
 
     """
     qs = self.default_queryset
-    if filters_Q and isinstance(filters_Q, Q):
-        qs = qs.filter(filters_Q)
-    if filters:
+    if filters or filters_Q:
         filters = filters if isinstance(filters, dict) else {}
-        qs = qs.filter(**filters)
-    if exclude_Q and isinstance(exclude_Q, Q):
-        qs = qs.exclude(exclude_Q)
-    if exclude:
+        filters_Q = filters_Q if isinstance(filters_Q, Q) else Q()
+        qs = qs.filter(filters_Q, **filters)
+    if exclude or exclude_Q:
         exclude = exclude if isinstance(exclude, dict) else {}
-        qs = qs.exclude(**exclude)
+        exclude_Q = exclude_Q if isinstance(exclude_Q, Q) else Q()
+        qs = qs.exclude(exclude_Q, **exclude)
     if order_by:
         if isinstance(order_by, six.string_types):
             qs = qs.order_by(order_by)
         elif isinstance(order_by, (list, tuple)):
             qs = qs.order_by(*order_by)
-    import ipdb; ipdb.set_trace()
     qs = qs[offset:offset+limit]
     return self.serializer_class(instance=qs, many=True).data
 
