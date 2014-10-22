@@ -34,7 +34,7 @@ class PipelineTests(SimpleModelTestMixin, TestCase):
         self.assertEqual([], r)
 
     def testSeveralFilters(self):
-        """ Just one filter in chain works well.
+        """ Several filters in the chain work well.
         """
         p = self.pipe.filter(self.MODEL_SYMBOL,
                              kwargs=dict(filters={'pk': self.models[0].pk}))
@@ -59,6 +59,16 @@ class PipelineTests(SimpleModelTestMixin, TestCase):
         self.assertEqual(expected, r)
         self.assertRaises(SimpleModel.DoesNotExist,
                           SimpleModel.objects.get, pk=self.models[0].pk)
+
+    def testAtomicPipeline(self):
+        """ Pipeline is atomic by default.
+        """
+        p = self.pipe
+        p = p.delete(self.MODEL_SYMBOL, self.get_model_dict(self.models[0]))
+        p = p.delete('invalid model symbol raise exception', {})
+
+        self.assertRaises(p.client.ResponseError, p.run)
+        self.assertTrue(SimpleModel.objects.filter(pk=self.models[0].pk).exists())
 
     @expectedFailure
     def testPatchTransformer(self):

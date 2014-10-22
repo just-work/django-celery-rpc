@@ -208,14 +208,15 @@ def pipe(self, pipeline):
     """
     result = []
     r = None
-    for t in pipeline:
-        task = self.app.tasks[t['name']]
-        args = t['args']
-        if t['options'].get('transformer'):
-            if not hasattr(args, 'append'):
-                args = list(args)
-            args.append(r)
-        r = task.apply(args=args, kwargs=t['kwargs']).get()
-        result.append(r)
+    with atomic_commit_on_success():
+        for t in pipeline:
+            task = self.app.tasks[t['name']]
+            args = t['args']
+            if t['options'].get('transformer'):
+                if not hasattr(args, 'append'):
+                    args = list(args)
+                args.append(r)
+            r = task.apply(args=args, kwargs=t['kwargs']).get()
+            result.append(r)
 
     return result

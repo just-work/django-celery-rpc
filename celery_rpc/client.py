@@ -332,12 +332,12 @@ class Pipe(object):
     def __init__(self, client):
         if not client:
             raise ValueError("Rpc client is required for Pipe() constructing")
-        self._client = client
+        self.client = client
         self._pipeline = []
 
     def _clone(self):
-        p = Pipe(self._client)
-        p._pipeline = self._pipeline.copy()
+        p = Pipe(self.client)
+        p._pipeline = self._pipeline[:]
         return p
 
     def _push(self, task):
@@ -350,17 +350,17 @@ class Pipe(object):
         """ Run pipeline - send chain of RPC request to server.
         :return: list of result of each chained request.
         """
-        task_name = self._client.PIPE_TASK_NAME
-        signature = self._client.prepare_task(task_name, (self._pipeline,), None,
+        task_name = utils.PIPE_TASK_NAME
+        signature = self.client.prepare_task(task_name, (self._pipeline,), None,
                                               high_priority=high_priority, **options)
-        return self._client.send_request(signature, async, timeout, retries)
+        return self.client.send_request(signature, async, timeout, retries)
 
     def _prepare_task(self, task_name, args, kwargs, options=None):
         return dict(name=task_name, args=args, kwargs=kwargs,
                     options=options or {})
 
     def filter(self, model, kwargs=None):
-        task = self._prepare_task(self._client.FILTER_TASK_NAME, (model, ),
+        task = self._prepare_task(utils.FILTER_TASK_NAME, (model, ),
                                   kwargs)
         return self._push(task)
 
@@ -375,14 +375,14 @@ class Pipe(object):
         :param kwargs:
         :return:
         """
-        args = []
+        args = [model]
         options = {}
         if data:
             args.append(data)
         else:
             options['transformer'] = True
 
-        task = self._prepare_task(self._client.DELETE_TASK_NAME, (model, ),
+        task = self._prepare_task(utils.DELETE_TASK_NAME, args,
                                   kwargs, options)
         return self._push(task)
 
@@ -397,14 +397,15 @@ class Pipe(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        task = self.prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME, args, kwargs)
+        task = self.prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME,
+                                 args, kwargs)
         return self._push(task)
 
     def getset(self, model, data, kwargs=None):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        task = self.prepare_task(utils.GETSET_TASK_NAME, args, kwargs)
+        task = self.prepare_task(self.client.GETSET_TASK_NAME, args, kwargs)
         return self._push(task)
 
     def create(self, model, data, kwargs=None):
