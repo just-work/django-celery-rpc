@@ -17,9 +17,9 @@ _base_model_task = get_base_task_class('ModelTask')
 @rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=_base_model_task,
           shared=False)
 def filter(self, model, filters=None, offset=0,
-           limit=config.FILTER_LIMIT, fields=None, exclude=[],
+           limit=config.FILTER_LIMIT, fields=None, exclude=None,
            depth=0, manager='objects', database=None, serializer_cls=None,
-           order_by=[], filters_Q=Q(), exclude_Q=Q(), *args, **kwargs):
+           order_by=None, filters_Q=None, exclude_Q=None, *args, **kwargs):
     """ Filter Django models and return serialized queryset.
 
     :param model: full name of model class like 'app.models:Model'
@@ -37,9 +37,11 @@ def filter(self, model, filters=None, offset=0,
     qs = self.default_queryset
     if filters or filters_Q:
         filters = filters if isinstance(filters, dict) else {}
+        filters_Q = filters_Q if isinstance(filters_Q, Q) else Q()
         qs = qs.filter(filters_Q, **filters)
     if exclude or exclude_Q:
         exclude = exclude if isinstance(exclude, dict) else {}
+        exclude_Q = exclude_Q if isinstance(exclude_Q, Q) else Q()
         qs = qs.exclude(exclude_Q, **exclude)
     if order_by:
         if isinstance(order_by, six.string_types):
