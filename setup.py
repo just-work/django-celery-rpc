@@ -16,7 +16,7 @@ else:
 
 setup(
     name='django-celery-rpc',
-    version='0.17',
+    version='0.18',
     packages=find_packages(),
     url='https://github.com/ttyS15/django-celery-rpc',
     license='Public',
