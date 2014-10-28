@@ -352,7 +352,7 @@ class Pipe(object):
         """
         task_name = utils.PIPE_TASK_NAME
         signature = self.client.prepare_task(task_name, (self._pipeline,), None,
-                                              high_priority=high_priority, **options)
+                                             high_priority=high_priority, **options)
         return self.client.send_request(signature, async, timeout, retries)
 
     def _prepare_task(self, task_name, args, kwargs, options=None):
@@ -390,14 +390,14 @@ class Pipe(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        task = self.prepare_task(utils.UPDATE_TASK_NAME, args, kwargs)
+        task = self._prepare_task(utils.UPDATE_TASK_NAME, args, kwargs)
         return self._push(task)
 
     def update_or_create(self, model, data, kwargs=None):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        task = self.prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME,
+        task = self._prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME,
                                  args, kwargs)
         return self._push(task)
 
@@ -405,18 +405,18 @@ class Pipe(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        task = self.prepare_task(self.client.GETSET_TASK_NAME, args, kwargs)
+        task = self._prepare_task(self.client.GETSET_TASK_NAME, args, kwargs)
         return self._push(task)
 
     def create(self, model, data, kwargs=None):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        task = self.prepare_task(utils.CREATE_TASK_NAME, args, kwargs)
+        task = self._prepare_task(utils.CREATE_TASK_NAME, args, kwargs)
         return self._push(task)
 
     def call(self, function, args, kwargs):
-        task = self.prepare_task(utils.CALL_TASK_NAME, args, kwargs)
+        task = self._prepare_task(utils.CALL_TASK_NAME, args, kwargs)
         return self._push(task)
 
 

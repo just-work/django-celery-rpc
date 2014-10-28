@@ -60,6 +60,18 @@ class PipelineTests(SimpleModelTestMixin, TransactionTestCase):
         self.assertRaises(SimpleModel.DoesNotExist,
                           SimpleModel.objects.get, pk=self.models[0].pk)
 
+    def testUpdate(self):
+        """ Update works well in pipeline.
+        """
+        p = self.pipe.update(self.MODEL_SYMBOL,
+                             {'pk': self.models[0].pk, 'char': 'hello'})
+        r = p.run()
+
+        m = SimpleModel.objects.get(pk=self.models[0].pk)
+        self.assertEqual('hello', m.char)
+        expected = [self.get_model_dict(m)]
+        self.assertEqual(expected, r)
+
     def testAtomicPipeline(self):
         """ Pipeline is atomic by default.
         """
