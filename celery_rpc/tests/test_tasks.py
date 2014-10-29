@@ -3,28 +3,18 @@ from random import randint
 from uuid import uuid4
 
 from autofixture import AutoFixture
+from celery_rpc.tests.utils import get_model_dict, SimpleModelTestMixin
 from django.test import TestCase
 from django.db.models import Q
 from rest_framework import serializers
-
 from .. import tasks
 from ..exceptions import ModelTaskError
 from ..tests.tasks import CustomModelTask
 from .models import SimpleModel, NonAutoPrimaryKeyModel, PartialUpdateModel
 
 
-def get_model_dict(model):
-    result = model.__dict__.copy()
-    del result['_state']
-    return result
-
-
-class BaseTaskTests(TestCase):
-
-    MODEL_SYMBOL = 'celery_rpc.tests.models:SimpleModel'
-
-    def setUp(self):
-        self.models = AutoFixture(SimpleModel).create(5)
+class BaseTaskTests(SimpleModelTestMixin, TestCase):
+    pass
 
 
 class FilterTaskTests(BaseTaskTests):

@@ -37,7 +37,7 @@ class HighPriorityRequestTests(TestCase):
         method = getattr(self.rpc_client, method_name)
         args = ['fake_model_or_function_name'] + list(args)
         kwargs.update(high_priority=True, async=True)
-        with mock.patch.object(Client, '_send_request') as _send_request:
+        with mock.patch.object(Client, 'send_request') as _send_request:
             method(*args, **kwargs)
         # Get first parameter of args - Celery subtask signature
         signature = _send_request.call_args[0][0]

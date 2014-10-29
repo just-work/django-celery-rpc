@@ -1,13 +1,12 @@
 from __future__ import absolute_import
 
-import django
-from django.db import router, transaction
+from django.db import router
 from django.db.models import Q
 import six
 
 from . import config, utils
 from .app import rpc
-from .base import get_base_task_class
+from .base import get_base_task_class, atomic_commit_on_success
 from .exceptions import RestFrameworkError
 
 
@@ -70,19 +69,6 @@ def update(self, model, data, fields=None, nocache=False,
     instance, many = self.get_instance(data)
     return self.perform_changes(instance=instance, data=data, many=many,
                                 allow_add_remove=False, force_update=True)
-
-
-def atomic_commit_on_success(using=None):
-    """ Provides context manager for atomic database operations depending on
-    Django version.
-    """
-    ver = django.VERSION
-    if ver[0] == 1 and ver[1] < 6:
-        return transaction.commit_on_success(using=using)
-    elif ver[0] == 1 and ver[1] >= 6:
-        return transaction.atomic(using=using)
-    else:
-        raise RuntimeError('Invalid Django version: {}'.format(ver))
 
 
 @rpc.task(name=utils.GETSET_TASK_NAME, bind=True, base=_base_model_change_task,
@@ -200,3 +186,25 @@ def call(self, function, args, kwargs):
             type(args))
         raise TypeError(message)
     return self.function(*args, **kwargs)
+
+
+@rpc.task(name=utils.PIPE_TASK_NAME, bind=True, shared=False)
+def pipe(self, pipeline):
+    """ Handle pipeline and return results
+    :param pipeline: List of pipelined requests.
+    :return: list of results of each request.
+    """
+    result = []
+    r = None
+    with atomic_commit_on_success():
+        for t in pipeline:
+            task = self.app.tasks[t['name']]
+            args = t['args']
+            if t['options'].get('transformer'):
+                if not hasattr(args, 'append'):
+                    args = list(args)
+                args.append(r)
+            r = task.apply(args=args, kwargs=t['kwargs']).get()
+            result.append(r)
+
+    return result

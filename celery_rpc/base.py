@@ -1,11 +1,13 @@
 import inspect
 
+import django
 from celery import Task
-from celery_rpc import config
 from kombu.utils import symbol_by_name
 from django.db.models import Model
+from django.db import transaction
 from rest_framework.serializers import ModelSerializer
 
+from . import config
 from .exceptions import ModelTaskError, RestFrameworkError
 
 
@@ -198,3 +200,18 @@ def get_base_task_class(base_task_name):
     raise TypeError(
         "Symbol '{}' has not a base ".format(custom_task_name,
                                              base_task.__name__))
+
+
+def atomic_commit_on_success():
+    """ Select context manager for atomic database operations depending on
+    Django version.
+    """
+    ver = django.VERSION
+    if ver[0] == 1 and ver[1] < 6:
+        return transaction.commit_on_success
+    elif ver[0] == 1 and ver[1] >= 6:
+        return transaction.atomic
+    else:
+        raise RuntimeError('Invalid Django version: {}'.format(ver))
+
+atomic_commit_on_success = atomic_commit_on_success()

@@ -1,10 +1,13 @@
 from __future__ import absolute_import
+import os
 
 from celery.exceptions import TimeoutError
 
 from . import utils
 from .config import GET_RESULT_TIMEOUT
 from .exceptions import RestFrameworkError
+
+TEST_MODE = bool(os.environ.get('CELERY_RPC_TEST_MODE', False))
 
 
 class Client(object):
@@ -41,7 +44,12 @@ class Client(object):
 
         """
         self._app = utils.create_celery_app(config=app_config)
-        self._task_stubs = self._register_stub_tasks(self._app)
+        if TEST_MODE:
+            # XXX Working ONLY while tests running
+            from .app import rpc
+            self._task_stubs = rpc.tasks
+        else:
+            self._task_stubs = self._register_stub_tasks(self._app)
 
     def prepare_task(self, task_name, args, kwargs, high_priority=False,
                      **options):
@@ -90,9 +98,9 @@ class Client(object):
 
         """
         args = (model, )
-        subtask = self.prepare_task(utils.FILTER_TASK_NAME, args, kwargs,
-                                    high_priority=high_priority, **options)
-        return self._send_request(subtask, async, timeout, retries)
+        signature = self.prepare_task(utils.FILTER_TASK_NAME, args, kwargs,
+                                      high_priority=high_priority, **options)
+        return self.send_request(signature, async, timeout, retries)
 
     def update(self, model, data, kwargs=None, async=False, timeout=None,
                retries=1, high_priority=False, **options):
@@ -115,9 +123,9 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        subtask = self.prepare_task(utils.UPDATE_TASK_NAME, args, kwargs,
-                                    high_priority=high_priority, **options)
-        return self._send_request(subtask, async, timeout, retries)
+        signature = self.prepare_task(utils.UPDATE_TASK_NAME, args, kwargs,
+                                      high_priority=high_priority, **options)
+        return self.send_request(signature, async, timeout, retries)
 
     def getset(self, model, data, kwargs=None, async=False, timeout=None,
                retries=1, high_priority=False, **options):
@@ -140,9 +148,9 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        subtask = self.prepare_task(utils.GETSET_TASK_NAME, args, kwargs,
-                                    high_priority=high_priority, **options)
-        return self._send_request(subtask, async, timeout, retries)
+        signature = self.prepare_task(utils.GETSET_TASK_NAME, args, kwargs,
+                                      high_priority=high_priority, **options)
+        return self.send_request(signature, async, timeout, retries)
 
     def update_or_create(self, model, data, kwargs=None, async=False,
                          timeout=None, retries=1, high_priority=False, **options):
@@ -166,9 +174,9 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        subtask = self.prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME, args,
+        signature = self.prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME, args,
                                     kwargs, high_priority=high_priority, **options)
-        return self._send_request(subtask, async, timeout, retries)
+        return self.send_request(signature, async, timeout, retries)
 
     def create(self, model, data, kwargs=None, async=False, timeout=None,
                retries=1, high_priority=False, **options):
@@ -191,9 +199,9 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        subtask = self.prepare_task(utils.CREATE_TASK_NAME, args,
-                                    kwargs, high_priority=high_priority, **options)
-        return self._send_request(subtask, async, timeout, retries)
+        signature = self.prepare_task(utils.CREATE_TASK_NAME, args,
+                                      kwargs, high_priority=high_priority, **options)
+        return self.send_request(signature, async, timeout, retries)
 
     def delete(self, model, data, kwargs=None, async=False, timeout=None,
                retries=1, high_priority=False, **options):
@@ -215,9 +223,9 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        subtask = self.prepare_task(utils.DELETE_TASK_NAME, args, kwargs,
+        signature = self.prepare_task(utils.DELETE_TASK_NAME, args, kwargs,
                                     high_priority=high_priority, **options)
-        return self._send_request(subtask, async, timeout, retries)
+        return self.send_request(signature, async, timeout, retries)
 
     def call(self, function, args=None, kwargs=None, async=False, timeout=None,
              retries=1, high_priority=False, **options):
@@ -237,9 +245,9 @@ class Client(object):
 
         """
         args = (function, args, kwargs)
-        subtask = self.prepare_task(utils.CALL_TASK_NAME, args, None,
-                                    high_priority=high_priority, **options)
-        return self._send_request(subtask, async, timeout, retries)
+        signature = self.prepare_task(utils.CALL_TASK_NAME, args, None,
+                                      high_priority=high_priority, **options)
+        return self.send_request(signature, async, timeout, retries)
 
     def get_result(self, async_result, timeout=None):
         """ Collect results from delayed result object
@@ -264,7 +272,13 @@ class Client(object):
             raise self.ResponseError(
                 'Something goes wrong while getting results', e)
 
-    def _send_request(self, signature, async=False, timeout=None, retries=1):
+    def pipe(self):
+        """ Create pipeline for RPC request
+        :return: Instance of Pipe
+        """
+        return Pipe(self)
+
+    def send_request(self, signature, async=False, timeout=None, retries=1):
         """ Sending request to a server
 
         :param signature: Celery signature instance
@@ -309,6 +323,102 @@ class Client(object):
                 pass
             tasks[name] = task_stub
         return tasks
+
+
+class Pipe(object):
+    """ Builder of pipeline of RPC requests.
+    """
+
+    def __init__(self, client):
+        if not client:
+            raise ValueError("Rpc client is required for Pipe() constructing")
+        self.client = client
+        self._pipeline = []
+
+    def _clone(self):
+        p = Pipe(self.client)
+        p._pipeline = self._pipeline[:]
+        return p
+
+    def _push(self, task):
+        p = self._clone()
+        p._pipeline.append(task)
+        return p
+
+    def run(self, async=False, timeout=None, retries=1, high_priority=False,
+            **options):
+        """ Run pipeline - send chain of RPC request to server.
+        :return: list of result of each chained request.
+        """
+        task_name = utils.PIPE_TASK_NAME
+        signature = self.client.prepare_task(task_name, (self._pipeline,), None,
+                                             high_priority=high_priority, **options)
+        return self.client.send_request(signature, async, timeout, retries)
+
+    def _prepare_task(self, task_name, args, kwargs, options=None):
+        return dict(name=task_name, args=args, kwargs=kwargs,
+                    options=options or {})
+
+    def filter(self, model, kwargs=None):
+        task = self._prepare_task(utils.FILTER_TASK_NAME, (model, ),
+                                  kwargs)
+        return self._push(task)
+
+    def delete(self, model, data=None, kwargs=None):
+        """ Delete models identified by `data` or by result of previous request.
+
+        If `data` missed acts as transformer accepted on data from output of
+        previous task.
+
+        :param model: full name of model symbol like 'package.module:Class'
+        :param data: dict (or list with dicts), which can contains ID
+        :param kwargs:
+        :return:
+        """
+        args = [model]
+        options = {}
+        if data:
+            args.append(data)
+        else:
+            options['transformer'] = True
+
+        task = self._prepare_task(utils.DELETE_TASK_NAME, args,
+                                  kwargs, options)
+        return self._push(task)
+
+    def update(self, model, data, kwargs=None):
+        if not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        args = (model, data)
+        task = self._prepare_task(utils.UPDATE_TASK_NAME, args, kwargs)
+        return self._push(task)
+
+    def update_or_create(self, model, data, kwargs=None):
+        if not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        args = (model, data)
+        task = self._prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME,
+                                 args, kwargs)
+        return self._push(task)
+
+    def getset(self, model, data, kwargs=None):
+        if not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        args = (model, data)
+        task = self._prepare_task(self.client.GETSET_TASK_NAME, args, kwargs)
+        return self._push(task)
+
+    def create(self, model, data, kwargs=None):
+        if not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        args = (model, data)
+        task = self._prepare_task(utils.CREATE_TASK_NAME, args, kwargs)
+        return self._push(task)
+
+    def call(self, function, args, kwargs):
+        task = self._prepare_task(utils.CALL_TASK_NAME, args, kwargs)
+        return self._push(task)
+
 
 # Copy task names into client class from utils
 for n, v in utils.TASK_NAME_MAP.items():
