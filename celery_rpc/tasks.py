@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from copy import deepcopy
 
 from django.db import router
 from django.db.models import Q
@@ -212,22 +213,25 @@ def pipe(self, pipeline):
 
 
 @rpc.task(name=utils.TRANSFORM_TASK_NAME, bind=True, shared=False)
-def transform(self, map, data, defaults=None):
+def transform(self, data, map, defaults=None):
     defaults = defaults or {}
 
     def _transform_keys_and_set_defaults(data):
-        for k, v in defaults.iteritems():
-            data.setdefault(k, v)
-
+        result = {}
         for old_key, new_key in map.iteritems():
             if old_key in data.keys():
-                data[new_key] = data.pop(old_key)
+                result[new_key] = data[old_key]
+
+        for k, v in defaults.iteritems():
+            result.setdefault(k, v)
+
+        return result
 
     if isinstance(data, list):
         for el in data:
-            _transform_keys_and_set_defaults(el)
+            el = _transform_keys_and_set_defaults(el)
 
     if isinstance(data, (dict, SortedDictWithMetadata)):
-        _transform_keys_and_set_defaults(data)
+        data = _transform_keys_and_set_defaults(data)
 
     return data

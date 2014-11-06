@@ -416,11 +416,19 @@ class Pipe(object):
         task = self._prepare_task(self.client.GETSET_TASK_NAME, args, kwargs)
         return self._push(task)
 
-    def create(self, model, data, kwargs=None):
-        if not hasattr(data, '__iter__'):
+    def create(self, model, data=None, kwargs=None):
+        if data and not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
-        args = (model, data)
-        task = self._prepare_task(utils.CREATE_TASK_NAME, args, kwargs)
+
+        args = [model]
+        options = {}
+        if data:
+            args.append(data)
+        else:
+            options['transformer'] = True
+
+        task = self._prepare_task(utils.CREATE_TASK_NAME, args,
+                                  kwargs, options)
         return self._push(task)
 
     def call(self, function, args, kwargs):
@@ -428,12 +436,12 @@ class Pipe(object):
         task = self._prepare_task(utils.CALL_TASK_NAME, args, kwargs)
         return self._push(task)
 
-    def transform(self, map, kwargs):
+    def transform(self, map, defaults=None):
         args = (map,)
         options = {'transformer': True}
 
         task = self._prepare_task(utils.TRANSFORM_TASK_NAME, args,
-                                  kwargs, options)
+                                  defaults, options)
         return self._push(task)
 
 

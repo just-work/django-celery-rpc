@@ -96,7 +96,14 @@ class PipelineTests(SimpleModelTestMixin, TransactionTestCase):
 
         self.assertEqual(expected, r)
 
-    def testUpdateTransformer(self):
-        pass
-
-
+    # def testUpdateTransformer(self):
+    #     FK_MODEL_SYMBOL = 'celery_rpc.tests.models:FkSimpleModel'
+    #     transform_map = {'id': 'fk'}
+    #
+    #     p = self.pipe.filter(self.MODEL_SYMBOL,
+    #                          kwargs=dict(filters={'pk': self.models[0].pk}))
+    #     p = p.transform(transform_map)
+    #     p = p.create(FK_MODEL_SYMBOL)
+    #     r = p.run()
+    #
+    #     print r
