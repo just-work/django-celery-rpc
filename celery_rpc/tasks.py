@@ -205,7 +205,7 @@ def pipe(self, pipeline):
             if t['options'].get('transformer'):
                 if not hasattr(args, 'append'):
                     args = list(args)
-                args.append(r)
+                args.insert(0, r)
             r = task.apply(args=args, kwargs=t['kwargs']).get()
             result.append(r)
 
