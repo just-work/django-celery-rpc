@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from django.db import router
 from django.db.models import Q
+from rest_framework.serializers import SortedDictWithMetadata
 import six
 
 from . import config, utils
@@ -208,3 +209,25 @@ def pipe(self, pipeline):
             result.append(r)
 
     return result
+
+
+@rpc.task(name=utils.TRANSFORM_TASK_NAME, bind=True, shared=False)
+def transform(self, map, data, defaults=None):
+    defaults = defaults or {}
+
+    def _transform_keys_and_set_defaults(data):
+        for k, v in defaults.iteritems():
+            data.setdefault(k, v)
+
+        for old_key, new_key in map.iteritems():
+            if old_key in data.keys():
+                data[new_key] = data.pop(old_key)
+
+    if isinstance(data, list):
+        for el in data:
+            _transform_keys_and_set_defaults(el)
+
+    if isinstance(data, (dict, SortedDictWithMetadata)):
+        _transform_keys_and_set_defaults(data)
+
+    return data

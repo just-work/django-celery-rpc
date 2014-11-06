@@ -22,7 +22,7 @@ class PipelineTests(SimpleModelTestMixin, TransactionTestCase):
         return self.client.pipe()
 
     def testClientCanCreatePipe(self):
-        """ Client able to start pipelineю
+        """ Client able to start pipeline
         """
         p = self.client.pipe()
         self.assertIsInstance(p, Pipe)
@@ -95,5 +95,8 @@ class PipelineTests(SimpleModelTestMixin, TransactionTestCase):
         expected[1].update(char='abc')
 
         self.assertEqual(expected, r)
+
+    def testUpdateTransformer(self):
+        pass
 
 

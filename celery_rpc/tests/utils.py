@@ -8,6 +8,12 @@ def get_model_dict(model):
     del result['_state']
     return result
 
+def get_model_dict_from_list(models):
+    result = []
+    for model in models:
+        result.append(get_model_dict(model))
+    return result
+
 
 class SimpleModelTestMixin(object):
     """ Helper for tests with model needs.

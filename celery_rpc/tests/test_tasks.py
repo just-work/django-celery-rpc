@@ -3,7 +3,8 @@ from random import randint
 from uuid import uuid4
 
 from autofixture import AutoFixture
-from celery_rpc.tests.utils import get_model_dict, SimpleModelTestMixin
+from celery_rpc.tests.utils import (get_model_dict, SimpleModelTestMixin,
+                                    get_model_dict_from_list)
 from django.test import TestCase
 from django.db.models import Q
 from rest_framework import serializers
@@ -355,3 +356,41 @@ class OverrideTaskTests(TestCase):
     """
     def testOverrideModelTask(self):
         self.assertIsInstance(tasks.filter, CustomModelTask)
+
+
+class TransformTaskTests(BaseTaskTests):
+
+    task = tasks.transform
+    transform_map = {'char': 'title'}
+
+    def _transform_keys(self, transform_map, data):
+        for old_key, new_key in transform_map.iteritems():
+            if old_key in data.keys():
+                data[new_key] = data.pop(old_key)
+
+    def testTransformDict(self):
+        before = get_model_dict(self.models[0])
+        after = before.copy()
+        self._transform_keys(self.transform_map, after)
+
+        r = self.task.delay(self.transform_map, before)
+        self.assertEquals(after, r.get())
+
+    def testTransformList(self):
+        before = get_model_dict_from_list(self.models)
+        after = before[:]
+        for el in after:
+            self._transform_keys(self.transform_map, el)
+
+        r = self.task.delay(self.transform_map, before)
+        self.assertEquals(after, r.get())
+
+    def testTransformWithDefaults(self):
+        defaults = dict(bart='simpson')
+        before = get_model_dict(self.models[0])
+        after = before.copy()
+        after.update(defaults)
+        self._transform_keys(self.transform_map, after)
+
+        r = self.task.delay(self.transform_map, before, defaults=defaults)
+        self.assertEquals(after, r.get())
