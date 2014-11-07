@@ -103,7 +103,7 @@ class PipelineTests(SimpleModelTestMixin, TransactionTestCase):
         p = self.pipe.filter(self.MODEL_SYMBOL,
                              kwargs=dict(filters={'pk': self.models[0].pk}))
         p = p.transform(transform_map)
-        # p = p.create(FK_MODEL_SYMBOL)
+        p = p.create(FK_MODEL_SYMBOL)
         r = p.run()
 
-        print r
+        self.assertEqual(r[2][0]['fk'], r[1][0]['fk'])

@@ -363,7 +363,7 @@ class TransformTaskTests(BaseTaskTests):
     task = tasks.transform
     transform_map = {'char': 'title'}
 
-    def _transform_keys(self, data, transform_map):
+    def _transform_keys(self, transform_map, data):
         result = {}
         for old_key, new_key in transform_map.iteritems():
             if old_key in data.keys():
@@ -373,25 +373,25 @@ class TransformTaskTests(BaseTaskTests):
 
     def testTransformDict(self):
         before = get_model_dict(self.models[0])
-        after = self._transform_keys(before, self.transform_map)
+        after = self._transform_keys(self.transform_map, before)
 
-        r = self.task.delay(before, self.transform_map)
+        r = self.task.delay(self.transform_map, before)
         self.assertEquals(after, r.get())
 
     def testTransformList(self):
         before = get_model_dict_from_list(self.models)
         after = before[:]
-        for el in after:
-            el = self._transform_keys(el, self.transform_map)
+        for index, el in enumerate(after):
+            after[index] = self._transform_keys(self.transform_map, el)
 
-        r = self.task.delay(before, self.transform_map)
+        r = self.task.delay(self.transform_map, before)
         self.assertEquals(after, r.get())
 
     def testTransformWithDefaults(self):
         defaults = dict(bart='simpson')
         before = get_model_dict(self.models[0])
-        after = self._transform_keys(before, self.transform_map)
+        after = self._transform_keys(self.transform_map, before)
         after.update(defaults)
 
-        r = self.task.delay(before, self.transform_map, defaults=defaults)
+        r = self.task.delay(self.transform_map, before, defaults=defaults)
         self.assertEquals(after, r.get())
