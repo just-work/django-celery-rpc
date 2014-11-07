@@ -1,25 +1,31 @@
 # coding: utf-8
 from __future__ import absolute_import
 from unittest import expectedFailure
+from autofixture import AutoFixture
 
 from django.test import TransactionTestCase
 
 from ..client import Pipe, Client
 from .utils import SimpleModelTestMixin
-from .models import SimpleModel
+from .models import SimpleModel, FkSimpleModel
 
 
-class PipelineTests(SimpleModelTestMixin, TransactionTestCase):
-    """ Pipeline related tests.
+class BasePipelineTests(SimpleModelTestMixin, TransactionTestCase):
+    """ Abstract base class for pipe tests.
     """
 
     def setUp(self):
-        super(PipelineTests, self).setUp()
+        super(BasePipelineTests, self).setUp()
         self.client = Client()
 
     @property
     def pipe(self):
         return self.client.pipe()
+
+
+class PipelineTests(BasePipelineTests):
+    """ Pipeline related tests.
+    """
 
     def testClientCanCreatePipe(self):
         """ Client able to start pipeline
@@ -46,19 +52,6 @@ class PipelineTests(SimpleModelTestMixin, TransactionTestCase):
         expected = [[self.get_model_dict(self.models[0])],
                     [self.get_model_dict(self.models[1])]]
         self.assertEqual(expected, r)
-
-    def testDeleteTransformer(self):
-        """ Delete transformation works well.
-        """
-        p = self.pipe.filter(self.MODEL_SYMBOL,
-                             kwargs=dict(filters={'pk': self.models[0].pk}))
-        p = p.delete(self.MODEL_SYMBOL)
-        r = p.run()
-
-        expected = [[self.get_model_dict(self.models[0])], []]
-        self.assertEqual(expected, r)
-        self.assertRaises(SimpleModel.DoesNotExist,
-                          SimpleModel.objects.get, pk=self.models[0].pk)
 
     def testUpdate(self):
         """ Update works well in pipeline.
@@ -96,14 +89,58 @@ class PipelineTests(SimpleModelTestMixin, TransactionTestCase):
 
         self.assertEqual(expected, r)
 
-    def testUpdateTransformer(self):
-        FK_MODEL_SYMBOL = 'celery_rpc.tests.models:FkSimpleModel'
-        transform_map = {'id': 'fk'}
 
+class TransformTests(BasePipelineTests):
+    """ Tests on different transformation.
+    """
+    FK_MODEL_SYMBOL = 'celery_rpc.tests.models:FkSimpleModel'
+    TRANSFORM_MAP = {'id': 'fk'}
+
+    def setUp(self):
+        super(TransformTests, self).setUp()
+        self.fk_model = AutoFixture(FkSimpleModel).create_one()
+
+    def testDeleteTransformer(self):
+        """ Delete transformation works well.
+        """
         p = self.pipe.filter(self.MODEL_SYMBOL,
                              kwargs=dict(filters={'pk': self.models[0].pk}))
-        p = p.transform(transform_map)
-        p = p.create(FK_MODEL_SYMBOL)
+        p = p.delete(self.MODEL_SYMBOL)
+        r = p.run()
+
+        expected = [[self.get_model_dict(self.models[0])], []]
+        self.assertEqual(expected, r)
+        self.assertRaises(SimpleModel.DoesNotExist,
+                          SimpleModel.objects.get, pk=self.models[0].pk)
+
+    def testCreateTransformer(self):
+        p = self.pipe.filter(self.MODEL_SYMBOL,
+                             kwargs=dict(filters={'pk': self.models[0].pk}))
+        p = p.transform(self.TRANSFORM_MAP)
+        p = p.create(self.FK_MODEL_SYMBOL)
         r = p.run()
 
         self.assertEqual(r[2][0]['fk'], r[1][0]['fk'])
+
+    def testUpdateTransformer(self):
+        p = self.pipe.filter(self.MODEL_SYMBOL,
+                             kwargs=dict(filters={'pk': self.models[0].pk}))
+        p = p.transform(self.TRANSFORM_MAP,
+                        kwargs=dict(defaults={'id': self.fk_model.id}))
+
+        p = p.update(self.FK_MODEL_SYMBOL)
+        r = p.run()
+
+        self.assertEqual(r[2][0]['fk'], self.models[0].pk)
+
+    def testUpdateOrCreateTransformer(self):
+        self.fail()
+
+    def testFilterTransformer(self):
+        self.fail()
+
+    def testGetSetTransformer(self):
+        self.fail()
+
+    def testCallTransformer(self):
+        self.fail()
