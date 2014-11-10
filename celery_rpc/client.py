@@ -401,8 +401,8 @@ class Pipe(object):
                                   kwargs, options)
         return self._push(task)
 
-    def update_or_create(self, model, data, kwargs=None):
-        if not hasattr(data, '__iter__'):
+    def update_or_create(self, model, data=None, kwargs=None):
+        if data and not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
 
         args = [model]
@@ -413,14 +413,21 @@ class Pipe(object):
             options['transformer'] = True
 
         task = self._prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME,
-                                 args, kwargs)
+                                 args, kwargs, options)
         return self._push(task)
 
-    def getset(self, model, data, kwargs=None):
-        if not hasattr(data, '__iter__'):
+    def getset(self, model, data=None, kwargs=None):
+        if data and not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
-        args = (model, data)
-        task = self._prepare_task(self.client.GETSET_TASK_NAME, args, kwargs)
+
+        args = [model]
+        options = {}
+        if data:
+            args.append(data)
+        else:
+            options['transformer'] = True
+        task = self._prepare_task(self.client.GETSET_TASK_NAME, args,
+                                  kwargs, options)
         return self._push(task)
 
     def create(self, model, data=None, kwargs=None):

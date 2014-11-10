@@ -98,7 +98,10 @@ class TransformTests(BasePipelineTests):
 
     def setUp(self):
         super(TransformTests, self).setUp()
-        self.fk_model = AutoFixture(FkSimpleModel).create_one()
+
+        self.model = AutoFixture(SimpleModel).create_one()
+        self.fk_model = AutoFixture(
+            FkSimpleModel, field_values={'fk': self.model}).create_one()
 
     def testDeleteTransformer(self):
         """ Delete transformation works well.
@@ -120,7 +123,31 @@ class TransformTests(BasePipelineTests):
         p = p.create(self.FK_MODEL_SYMBOL)
         r = p.run()
 
-        self.assertEqual(r[2][0]['fk'], r[1][0]['fk'])
+        self.assertTrue(FkSimpleModel.objects.get(**r[2][0]))
+
+    def testUpdateOrCreateCreateTransformer(self):
+        """ Test creating with update_or_create
+        """
+        p = self.pipe.filter(self.MODEL_SYMBOL,
+                             kwargs=dict(filters={'pk': self.models[0].pk}))
+        p = p.transform(self.TRANSFORM_MAP)
+        p = p.update_or_create(self.FK_MODEL_SYMBOL)
+        r = p.run()
+
+        self.assertTrue(FkSimpleModel.objects.get(**r[2][0]))
+
+    def testUpdateOrCreateUpdateTransformer(self):
+        self.assertNotEqual(self.fk_model.id, self.models[1].pk)
+
+        p = self.pipe.filter(self.MODEL_SYMBOL,
+                             kwargs=dict(filters={'pk': self.models[1].pk}))
+        p = p.transform(self.TRANSFORM_MAP,
+                        kwargs=dict(defaults={'id': self.fk_model.id}))
+        p = p.update_or_create(self.FK_MODEL_SYMBOL)
+        r = p.run()
+
+        expect_obj = FkSimpleModel.objects.get(**r[2][0])
+        self.assertEquals(expect_obj.fk.id, self.models[1].pk)
 
     def testUpdateTransformer(self):
         p = self.pipe.filter(self.MODEL_SYMBOL,
@@ -133,14 +160,16 @@ class TransformTests(BasePipelineTests):
 
         self.assertEqual(r[2][0]['fk'], self.models[0].pk)
 
-    def testUpdateOrCreateTransformer(self):
-        self.fail()
-
-    def testFilterTransformer(self):
-        self.fail()
-
     def testGetSetTransformer(self):
-        self.fail()
+        p = self.pipe.filter(self.MODEL_SYMBOL,
+                             kwargs=dict(filters={'pk': self.models[3].pk}))
+        p = p.transform(self.TRANSFORM_MAP,
+                        kwargs=dict(defaults={'id': self.fk_model.id}))
 
-    def testCallTransformer(self):
-        self.fail()
+        p = p.getset(self.FK_MODEL_SYMBOL)
+        r = p.run()
+
+        expect_obj = FkSimpleModel.objects.get(fk=self.models[3].pk)
+        self.assertEquals(expect_obj.fk.id, self.models[3].pk)
+        # return previous state
+        self.assertNotEqual(r[2][0]['fk'], self.models[3].pk)
