@@ -365,7 +365,7 @@ class TransformTaskTests(BaseTaskTests):
 
     def _transform_keys(self, transform_map, data):
         result = {}
-        for old_key, new_key in transform_map.iteritems():
+        for old_key, new_key in transform_map.items():
             if old_key in data.keys():
                 result[new_key] = data[old_key]
 
