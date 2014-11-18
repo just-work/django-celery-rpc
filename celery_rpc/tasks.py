@@ -216,13 +216,10 @@ def transform(self, map, data, defaults=None):
     defaults = defaults or {}
 
     def _transform_keys_and_set_defaults(data):
-        result = {}
-        for old_key, new_key in map.iteritems():
-            if old_key in data.keys():
-                result[new_key] = data[old_key]
-
-        for k, v in defaults.iteritems():
-            result.setdefault(k, v)
+        result = defaults.copy()
+        for initial_key, result_key in map.items():
+            if initial_key in data:
+                result[result_key] = data[initial_key]
 
         return result
 
@@ -231,8 +228,5 @@ def transform(self, map, data, defaults=None):
         for el in data:
             out.append(_transform_keys_and_set_defaults(el))
         return out
-
-    if isinstance(data, (dict, SortedDictWithMetadata)):
+    else:
         return _transform_keys_and_set_defaults(data)
-
-    return data

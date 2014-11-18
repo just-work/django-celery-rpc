@@ -375,74 +375,40 @@ class Pipe(object):
         :param kwargs:
         :return:
         """
-        args = [model]
-        options = {}
-        if data:
-            args.append(data)
-        else:
-            options['transformer'] = True
-
-        task = self._prepare_task(utils.DELETE_TASK_NAME, args,
-                                  kwargs, options)
+        task = self._prepare_model_change_task(utils.DELETE_TASK_NAME, model,
+                                               data, kwargs)
         return self._push(task)
 
     def update(self, model, data=None, kwargs=None):
         if data and not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
 
-        args = [model]
-        options = {}
-        if data:
-            args.append(data)
-        else:
-            options['transformer'] = True
-
-        task = self._prepare_task(utils.UPDATE_TASK_NAME, args,
-                                  kwargs, options)
+        task = self._prepare_model_change_task(utils.UPDATE_TASK_NAME, model,
+                                               data, kwargs)
         return self._push(task)
 
     def update_or_create(self, model, data=None, kwargs=None):
         if data and not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
 
-        args = [model]
-        options = {}
-        if data:
-            args.append(data)
-        else:
-            options['transformer'] = True
-
-        task = self._prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME,
-                                 args, kwargs, options)
+        task = self._prepare_model_change_task(utils.UPDATE_OR_CREATE_TASK_NAME,
+                                               model, data, kwargs)
         return self._push(task)
 
     def getset(self, model, data=None, kwargs=None):
         if data and not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
 
-        args = [model]
-        options = {}
-        if data:
-            args.append(data)
-        else:
-            options['transformer'] = True
-        task = self._prepare_task(self.client.GETSET_TASK_NAME, args,
-                                  kwargs, options)
+        task = self._prepare_model_change_task(utils.GETSET_TASK_NAME, model,
+                                               data, kwargs)
         return self._push(task)
 
     def create(self, model, data=None, kwargs=None):
         if data and not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
 
-        args = [model]
-        options = {}
-        if data:
-            args.append(data)
-        else:
-            options['transformer'] = True
-
-        task = self._prepare_task(utils.CREATE_TASK_NAME, args,
-                                  kwargs, options)
+        task = self._prepare_model_change_task(utils.CREATE_TASK_NAME, model,
+                                               data, kwargs)
         return self._push(task)
 
     def call(self, function, args, kwargs):
@@ -457,6 +423,17 @@ class Pipe(object):
         task = self._prepare_task(utils.TRANSFORM_TASK_NAME, args,
                                   kwargs, options)
         return self._push(task)
+
+    def _prepare_model_change_task(self, task_name, model, data=None,
+                                   kwargs=None):
+        args = [model]
+        options = {}
+        if data:
+            args.append(data)
+        else:
+            options['transformer'] = True
+
+        return self._prepare_task(task_name, args, kwargs, options)
 
 
 # Copy task names into client class from utils
