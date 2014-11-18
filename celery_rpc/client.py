@@ -420,7 +420,7 @@ class Pipe(object):
         args = (map,)
         options = {'transformer': True}
 
-        task = self._prepare_task(utils.TRANSFORM_TASK_NAME, args,
+        task = self._prepare_task(utils.TRANSLATE_TASK_NAME, args,
                                   kwargs, options)
         return self._push(task)
 

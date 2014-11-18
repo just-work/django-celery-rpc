@@ -211,11 +211,11 @@ def pipe(self, pipeline):
     return result
 
 
-@rpc.task(name=utils.TRANSFORM_TASK_NAME, bind=True, shared=False)
-def transform(self, map, data, defaults=None):
+@rpc.task(name=utils.TRANSLATE_TASK_NAME, bind=True, shared=False)
+def translate(self, map, data, defaults=None):
     defaults = defaults or {}
 
-    def _transform_keys_and_set_defaults(data):
+    def _translate_keys_and_set_defaults(data):
         result = defaults.copy()
         for initial_key, result_key in map.items():
             if initial_key in data:
@@ -226,7 +226,7 @@ def transform(self, map, data, defaults=None):
     if isinstance(data, (list, tuple)):
         out = []
         for el in data:
-            out.append(_transform_keys_and_set_defaults(el))
+            out.append(_translate_keys_and_set_defaults(el))
         return out
     else:
-        return _transform_keys_and_set_defaults(data)
+        return _translate_keys_and_set_defaults(data)

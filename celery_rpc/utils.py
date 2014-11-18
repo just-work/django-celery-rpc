@@ -32,6 +32,6 @@ CREATE_TASK_NAME = 'celery_rpc.create'
 DELETE_TASK_NAME = 'celery_rpc.delete'
 CALL_TASK_NAME = 'celery_rpc.call'
 PIPE_TASK_NAME = 'celery_rpc.pipe'
-TRANSFORM_TASK_NAME = 'celery_rpc.transform'
+TRANSLATE_TASK_NAME = 'celery_rpc.translate'
 
 TASK_NAME_MAP = {n: v for n, v in locals().items() if n.endswith('_TASK_NAME')}

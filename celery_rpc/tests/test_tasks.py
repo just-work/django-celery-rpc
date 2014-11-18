@@ -358,9 +358,9 @@ class OverrideTaskTests(TestCase):
         self.assertIsInstance(tasks.filter, CustomModelTask)
 
 
-class TransformTaskTests(BaseTaskTests):
+class TranslateTaskTests(BaseTaskTests):
 
-    task = tasks.transform
+    task = tasks.translate
     transform_map = {'char': 'title'}
 
     def _transform_keys(self, transform_map, data):
