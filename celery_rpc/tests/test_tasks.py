@@ -395,7 +395,3 @@ class TransformTaskTests(BaseTaskTests):
 
         r = self.task.delay(self.transform_map, before, defaults=defaults)
         self.assertEquals(after, r.get())
-
-
-def test_call(args):
-    return args
