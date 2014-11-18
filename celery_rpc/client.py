@@ -416,7 +416,7 @@ class Pipe(object):
         task = self._prepare_task(utils.CALL_TASK_NAME, args, kwargs)
         return self._push(task)
 
-    def transform(self, map, kwargs=None):
+    def translate(self, map, kwargs=None):
         args = (map,)
         options = {'transformer': True}
 

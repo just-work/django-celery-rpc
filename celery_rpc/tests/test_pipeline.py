@@ -119,7 +119,7 @@ class TransformTests(BasePipelineTests):
     def testCreateTransformer(self):
         p = self.pipe.filter(self.MODEL_SYMBOL,
                              kwargs=dict(filters={'pk': self.models[0].pk}))
-        p = p.transform(self.TRANSFORM_MAP)
+        p = p.translate(self.TRANSFORM_MAP)
         p = p.create(self.FK_MODEL_SYMBOL)
         r = p.run()
 
@@ -130,7 +130,7 @@ class TransformTests(BasePipelineTests):
         """
         p = self.pipe.filter(self.MODEL_SYMBOL,
                              kwargs=dict(filters={'pk': self.models[0].pk}))
-        p = p.transform(self.TRANSFORM_MAP)
+        p = p.translate(self.TRANSFORM_MAP)
         p = p.update_or_create(self.FK_MODEL_SYMBOL)
         r = p.run()
 
@@ -141,7 +141,7 @@ class TransformTests(BasePipelineTests):
 
         p = self.pipe.filter(self.MODEL_SYMBOL,
                              kwargs=dict(filters={'pk': self.models[1].pk}))
-        p = p.transform(self.TRANSFORM_MAP,
+        p = p.translate(self.TRANSFORM_MAP,
                         kwargs=dict(defaults={'id': self.fk_model.id}))
         p = p.update_or_create(self.FK_MODEL_SYMBOL)
         r = p.run()
@@ -152,7 +152,7 @@ class TransformTests(BasePipelineTests):
     def testUpdateTransformer(self):
         p = self.pipe.filter(self.MODEL_SYMBOL,
                              kwargs=dict(filters={'pk': self.models[0].pk}))
-        p = p.transform(self.TRANSFORM_MAP,
+        p = p.translate(self.TRANSFORM_MAP,
                         kwargs=dict(defaults={'id': self.fk_model.id}))
 
         p = p.update(self.FK_MODEL_SYMBOL)
@@ -163,7 +163,7 @@ class TransformTests(BasePipelineTests):
     def testGetSetTransformer(self):
         p = self.pipe.filter(self.MODEL_SYMBOL,
                              kwargs=dict(filters={'pk': self.models[3].pk}))
-        p = p.transform(self.TRANSFORM_MAP,
+        p = p.translate(self.TRANSFORM_MAP,
                         kwargs=dict(defaults={'id': self.fk_model.id}))
 
         p = p.getset(self.FK_MODEL_SYMBOL)
