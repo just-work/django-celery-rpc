@@ -361,11 +361,11 @@ class OverrideTaskTests(TestCase):
 class TranslateTaskTests(BaseTaskTests):
 
     task = tasks.translate
-    transform_map = {'char': 'title'}
+    transform_map = {'title': 'char'}
 
     def _transform_keys(self, transform_map, data):
         result = {}
-        for old_key, new_key in transform_map.items():
+        for new_key, old_key in transform_map.items():
             if old_key in data.keys():
                 result[new_key] = data[old_key]
 

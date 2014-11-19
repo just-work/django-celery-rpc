@@ -94,7 +94,7 @@ class TransformTests(BasePipelineTests):
     """ Tests on different transformation.
     """
     FK_MODEL_SYMBOL = 'celery_rpc.tests.models:FkSimpleModel'
-    TRANSFORM_MAP = {'id': 'fk'}
+    TRANSFORM_MAP = {'fk': 'id'}
 
     def setUp(self):
         super(TransformTests, self).setUp()

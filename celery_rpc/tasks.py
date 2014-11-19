@@ -220,21 +220,25 @@ def translate(self, map, data, defaults=None):
 
     def _translate_keys_and_set_defaults(data):
         result = defaults.copy()
-        for initial_key, result_key in map.items():
+
+        for result_key, initial_key in map.items():
             if initial_key in data:
                 result[result_key] = data[initial_key]
 
         return result
 
     if isinstance(data, (list, tuple)):
-        out = []
-        for el in data:
-            out.append(_translate_keys_and_set_defaults(el))
-        return out
+        return [_translate_keys_and_set_defaults(el) for el in data]
     else:
         return _translate_keys_and_set_defaults(data)
 
 
 @rpc.task(name=utils.RESULT_TASK_NAME, bind=True, shared=False)
 def result(self, index, data):
+    """ Return result from redults lists by index
+
+    :param index: int index in list of results
+    :param data: list of values
+    :return: value from list
+    """
     return data[index]
