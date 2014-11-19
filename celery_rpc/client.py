@@ -435,6 +435,14 @@ class Pipe(object):
 
         return self._prepare_task(task_name, args, kwargs, options)
 
+    def result(self, index, kwargs=None):
+        args = (index,)
+        options = {'transformer': True}
+
+        task = self._prepare_task(utils.RESULT_TASK_NAME, args,
+                                  kwargs, options)
+        return self._push(task)
+
 
 # Copy task names into client class from utils
 for n, v in utils.TASK_NAME_MAP.items():

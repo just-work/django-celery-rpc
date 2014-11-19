@@ -173,3 +173,24 @@ class TransformTests(BasePipelineTests):
         self.assertEquals(expect_obj.fk.id, self.models[3].pk)
         # return previous state
         self.assertNotEqual(r[2][0]['fk'], self.models[3].pk)
+
+
+class ResultTests(TransformTests):
+
+    def testResult(self):
+        DEFAULTS_COUNT = 10
+        defaults = [dict(char=i) for i in xrange(DEFAULTS_COUNT)]
+        p = self.pipe.create(self.MODEL_SYMBOL, data={'char': 123})
+
+        for el in defaults:
+            p = p.result(0)
+            p = p.translate(self.TRANSFORM_MAP,
+                                    kwargs=dict(defaults=el))
+            p = p.create(self.FK_MODEL_SYMBOL)
+
+        r = p.run()
+
+        expect_fk_id = r[0]['id']
+        expect = FkSimpleModel.objects.filter(char__in=xrange(DEFAULTS_COUNT),
+                                                  fk=expect_fk_id)
+        self.assertEquals(expect.count(), DEFAULTS_COUNT)

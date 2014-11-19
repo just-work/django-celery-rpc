@@ -21,3 +21,4 @@ class PartialUpdateModel(models.Model):
 
 class FkSimpleModel(models.Model):
     fk = models.ForeignKey(SimpleModel)
+    char = models.CharField(max_length=64, blank=True, null=True)

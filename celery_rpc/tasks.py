@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 from django.db import router
 from django.db.models import Q
-from rest_framework.serializers import SortedDictWithMetadata
 import six
 
 from . import config, utils
@@ -195,6 +194,7 @@ def pipe(self, pipeline):
     :param pipeline: List of pipelined requests.
     :return: list of results of each request.
     """
+    global result
     result = []
     r = None
     with atomic_commit_on_success():
@@ -204,7 +204,10 @@ def pipe(self, pipeline):
             if t['options'].get('transformer'):
                 if not hasattr(args, 'append'):
                     args = list(args)
-                args.append(r)
+                if t['name'] == utils.RESULT_TASK_NAME:
+                    args.append(result)
+                else:
+                    args.append(r)
             r = task.apply(args=args, kwargs=t['kwargs']).get()
             result.append(r)
 
@@ -230,3 +233,8 @@ def translate(self, map, data, defaults=None):
         return out
     else:
         return _translate_keys_and_set_defaults(data)
+
+
+@rpc.task(name=utils.RESULT_TASK_NAME, bind=True, shared=False)
+def result(self, index, data):
+    return data[index]
