@@ -194,7 +194,6 @@ def pipe(self, pipeline):
     :param pipeline: List of pipelined requests.
     :return: list of results of each request.
     """
-    global result
     result = []
     r = None
     with atomic_commit_on_success():
