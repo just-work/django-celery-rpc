@@ -1,5 +1,6 @@
 # coding: utf-8
 from __future__ import absolute_import
+import six
 from unittest import expectedFailure
 from autofixture import AutoFixture
 
@@ -179,7 +180,7 @@ class ResultTests(TransformTests):
 
     def testResult(self):
         DEFAULTS_COUNT = 10
-        defaults = [dict(char=i) for i in xrange(DEFAULTS_COUNT)]
+        defaults = [dict(char=i) for i in six.moves.range(DEFAULTS_COUNT)]
         p = self.pipe.create(self.MODEL_SYMBOL, data={'char': 123})
 
         for el in defaults:
