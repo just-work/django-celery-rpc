@@ -216,6 +216,13 @@ def pipe(self, pipeline):
 
 @rpc.task(name=utils.TRANSLATE_TASK_NAME, bind=True, shared=False)
 def translate(self, map, data, defaults=None):
+    """ Translate keys by map.
+
+    :param map: list or dict, translation map
+    :param data: values for translate
+    :param defaults: defaults value
+    :return: list or dict translated values
+    """
     defaults = defaults or {}
 
     def _translate_keys_and_set_defaults(data):
@@ -235,7 +242,8 @@ def translate(self, map, data, defaults=None):
 
 @rpc.task(name=utils.RESULT_TASK_NAME, bind=True, shared=False)
 def result(self, index, data):
-    """ Return result from redults lists by index
+    """ Return result from pipe results lists by index.
+    Need to explicitly specify which value to transmit a subsequent task.
 
     :param index: int index in list of results
     :param data: list of values
