@@ -192,6 +192,6 @@ class ResultTests(TransformTests):
         r = p.run()
 
         expect_fk_id = r[0]['id']
-        expect = FkSimpleModel.objects.filter(char__in=xrange(DEFAULTS_COUNT),
+        expect = FkSimpleModel.objects.filter(char__in=six.moves.range(DEFAULTS_COUNT),
                                                   fk=expect_fk_id)
         self.assertEquals(expect.count(), DEFAULTS_COUNT)
