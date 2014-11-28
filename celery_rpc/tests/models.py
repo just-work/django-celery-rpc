@@ -17,3 +17,8 @@ class PartialUpdateModel(models.Model):
     """
     f1 = models.IntegerField()
     f2 = models.IntegerField()
+
+
+class FkSimpleModel(models.Model):
+    fk = models.ForeignKey(SimpleModel)
+    char = models.CharField(max_length=64, blank=True, null=True)

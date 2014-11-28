@@ -375,6 +375,57 @@ class Pipe(object):
         :param kwargs:
         :return:
         """
+        task = self._prepare_model_change_task(utils.DELETE_TASK_NAME, model,
+                                               data, kwargs)
+        return self._push(task)
+
+    def update(self, model, data=None, kwargs=None):
+        if data and not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+
+        task = self._prepare_model_change_task(utils.UPDATE_TASK_NAME, model,
+                                               data, kwargs)
+        return self._push(task)
+
+    def update_or_create(self, model, data=None, kwargs=None):
+        if data and not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+
+        task = self._prepare_model_change_task(utils.UPDATE_OR_CREATE_TASK_NAME,
+                                               model, data, kwargs)
+        return self._push(task)
+
+    def getset(self, model, data=None, kwargs=None):
+        if data and not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+
+        task = self._prepare_model_change_task(utils.GETSET_TASK_NAME, model,
+                                               data, kwargs)
+        return self._push(task)
+
+    def create(self, model, data=None, kwargs=None):
+        if data and not hasattr(data, '__iter__'):
+            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+
+        task = self._prepare_model_change_task(utils.CREATE_TASK_NAME, model,
+                                               data, kwargs)
+        return self._push(task)
+
+    def call(self, function, args, kwargs):
+        args = (function, args)
+        task = self._prepare_task(utils.CALL_TASK_NAME, args, kwargs)
+        return self._push(task)
+
+    def translate(self, map, kwargs=None):
+        args = (map,)
+        options = {'transformer': True}
+
+        task = self._prepare_task(utils.TRANSLATE_TASK_NAME, args,
+                                  kwargs, options)
+        return self._push(task)
+
+    def _prepare_model_change_task(self, task_name, model, data=None,
+                                   kwargs=None):
         args = [model]
         options = {}
         if data:
@@ -382,41 +433,14 @@ class Pipe(object):
         else:
             options['transformer'] = True
 
-        task = self._prepare_task(utils.DELETE_TASK_NAME, args,
+        return self._prepare_task(task_name, args, kwargs, options)
+
+    def result(self, index, kwargs=None):
+        args = (index,)
+        options = {'transformer': True}
+
+        task = self._prepare_task(utils.RESULT_TASK_NAME, args,
                                   kwargs, options)
-        return self._push(task)
-
-    def update(self, model, data, kwargs=None):
-        if not hasattr(data, '__iter__'):
-            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
-        args = (model, data)
-        task = self._prepare_task(utils.UPDATE_TASK_NAME, args, kwargs)
-        return self._push(task)
-
-    def update_or_create(self, model, data, kwargs=None):
-        if not hasattr(data, '__iter__'):
-            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
-        args = (model, data)
-        task = self._prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME,
-                                 args, kwargs)
-        return self._push(task)
-
-    def getset(self, model, data, kwargs=None):
-        if not hasattr(data, '__iter__'):
-            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
-        args = (model, data)
-        task = self._prepare_task(self.client.GETSET_TASK_NAME, args, kwargs)
-        return self._push(task)
-
-    def create(self, model, data, kwargs=None):
-        if not hasattr(data, '__iter__'):
-            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
-        args = (model, data)
-        task = self._prepare_task(utils.CREATE_TASK_NAME, args, kwargs)
-        return self._push(task)
-
-    def call(self, function, args, kwargs):
-        task = self._prepare_task(utils.CALL_TASK_NAME, args, kwargs)
         return self._push(task)
 
 

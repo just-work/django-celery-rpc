@@ -203,8 +203,49 @@ def pipe(self, pipeline):
             if t['options'].get('transformer'):
                 if not hasattr(args, 'append'):
                     args = list(args)
-                args.append(r)
+                if t['name'] == utils.RESULT_TASK_NAME:
+                    args.append(result)
+                else:
+                    args.append(r)
             r = task.apply(args=args, kwargs=t['kwargs']).get()
             result.append(r)
 
     return result
+
+
+@rpc.task(name=utils.TRANSLATE_TASK_NAME, bind=True, shared=False)
+def translate(self, map, data, defaults=None):
+    """ Translate keys by map.
+
+    :param map: list or dict, translation map
+    :param data: values for translate
+    :param defaults: defaults value
+    :return: list or dict translated values
+    """
+    defaults = defaults or {}
+
+    def _translate_keys_and_set_defaults(data):
+        result = defaults.copy()
+
+        for result_key, initial_key in map.items():
+            if initial_key in data:
+                result[result_key] = data[initial_key]
+
+        return result
+
+    if isinstance(data, (list, tuple)):
+        return [_translate_keys_and_set_defaults(el) for el in data]
+    else:
+        return _translate_keys_and_set_defaults(data)
+
+
+@rpc.task(name=utils.RESULT_TASK_NAME, bind=True, shared=False)
+def result(self, index, data):
+    """ Return result from pipe results lists by index.
+    Need to explicitly specify which value to transmit a subsequent task.
+
+    :param index: int index in list of results
+    :param data: list of values
+    :return: value from list
+    """
+    return data[index]
