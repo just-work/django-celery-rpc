@@ -16,7 +16,7 @@ else:
 
 setup(
     name='django-celery-rpc',
-    version='0.20-rc1',
+    version='0.20-rc2',
     packages=find_packages(),
     url='https://github.com/ttyS15/django-celery-rpc',
     license='Public',
@@ -40,7 +40,7 @@ setup(
     tests_require=[
         'django >=1.3, <1.8',
         'djangorestframework >= 2.3, <2.4',
-        'django-nose>=0.1.3',
+        'django-nose >= 1.2, <1.3',
         'django-autofixture==%s' % AUTOFIXTURE_VERSION,
         'mock==1.0.1',
     ],

@@ -134,7 +134,8 @@ def create(self, model, data, fields=None, nocache=False,
     """
     instance, many = (None, False if isinstance(data, dict) else True)
     return self.perform_changes(instance=instance, data=data, many=many,
-                                allow_add_remove=many, force_insert=True)
+                                allow_add_remove=many, force_insert=True,
+                                partial=False)
 
 
 @rpc.task(name=utils.DELETE_TASK_NAME, bind=True, base=_base_model_change_task,
