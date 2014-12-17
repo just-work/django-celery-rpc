@@ -71,7 +71,7 @@ class ModelTask(Task):
                 model = model_class
 
             def get_identity(self, data):
-                pk_name = self.Meta.model._meta.pk.attname
+                pk_name = self.Meta.model._meta.pk.name
                 try:
                     return data.get('pk', data.get(pk_name, None))
                 except AttributeError:
@@ -93,7 +93,7 @@ class ModelTask(Task):
 
     @property
     def pk_name(self):
-        return self.model._meta.pk.attname
+        return self.model._meta.pk.name
 
     @property
     def default_queryset(self):
