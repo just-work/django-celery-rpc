@@ -34,10 +34,8 @@ setup(
         # 'django >=1.3, <1.7',
         # 'djangorestframework >= 2.3, <2.4'
     ],
-    setup_requires=[
-        'nose>=1.0',
-    ],
     tests_require=[
+        'nose>=1.0',
         'django >=1.3, <1.8',
         'djangorestframework >= 2.3, <2.4',
         'django-nose >= 1.2, <1.3',
