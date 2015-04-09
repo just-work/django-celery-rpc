@@ -126,6 +126,17 @@ class TransformTests(BasePipelineTests):
 
         self.assertTrue(FkSimpleModel.objects.get(**r[2][0]))
 
+    def testCreateTransformerDefaults(self):
+        p = self.pipe.create(self.MODEL_SYMBOL, data={"char": "parent"})
+        p = p.translate(self.TRANSFORM_MAP,
+                        kwargs=dict(defaults={"char": "child"}))
+        p = p.create(self.FK_MODEL_SYMBOL)
+        r = p.run()
+
+        model = FkSimpleModel.objects.get(**r[2])
+        self.assertEqual(model.fk_id, r[0]["id"])
+        self.assertEqual(model.char, "child")
+
     def testUpdateOrCreateCreateTransformer(self):
         """ Test creating with update_or_create
         """
