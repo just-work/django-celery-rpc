@@ -155,13 +155,7 @@ span_client.create('apps.models:MyModel', data={"a": "a"})
 Bulk creating
 
 ```
-span_client.create('apps.models:MyModel', data=[{"a": "a"}, {"a", "b"}])
-```
-
-### Deliting
-
-```
-span_client.create('apps.models:MyModel', data=[{"a": "a"}, {"a", "b"}])
+span_client.create('apps.models:MyModel', data=[{"a": "a"}, {"a": "b"}])
 ```
 
 ### Pipe
