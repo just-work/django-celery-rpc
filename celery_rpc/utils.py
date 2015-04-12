@@ -1,7 +1,6 @@
 # coding: utf-8
+from kombu import Queue, utils
 from celery import Celery
-from kombu import Queue
-
 
 def create_celery_app(config=None, **opts):
     opts.setdefault('main', 'celery-rpc')
@@ -23,6 +22,22 @@ def create_celery_app(config=None, **opts):
                        Queue(high_q, routing_key=high_rk)))
 
     return app
+
+
+def symbol_by_name(name):
+    """ Get symbol by qualified name.
+    """
+    try:
+        return utils.symbol_by_name(name)
+    except:
+        pass
+
+    if ':' in name:
+        name = name.replace(':', '.')
+    attrs = name.split('.')
+    base_module = utils.symbol_by_name(attrs.pop(0))
+    return reduce(getattr, attrs, base_module)
+
 
 FILTER_TASK_NAME = 'celery_rpc.filter'
 UPDATE_TASK_NAME = 'celery_rpc.update'

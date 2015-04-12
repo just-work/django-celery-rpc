@@ -1,13 +1,14 @@
 import inspect
+import six
 
 import django
 from celery import Task
-from kombu.utils import symbol_by_name
 from django.db.models import Model
 from django.db import transaction
 from rest_framework.serializers import ModelSerializer
 
 from . import config
+from .utils import symbol_by_name
 from .exceptions import ModelTaskError, RestFrameworkError
 
 
@@ -33,7 +34,15 @@ class ModelTask(Task):
         """ Import class by full name, check type and return.
         """
         sym = symbol_by_name(model_name)
-        if inspect.isclass(sym) and issubclass(sym, Model):
+        if isinstance(sym, six.string_types):
+            # perhaps model name is a value of 'sym'
+            model_name = sym
+            sym = symbol_by_name(model_name)
+        elif not inspect.isclass(sym) and callable(sym):
+            # perhaps model name is a result of call 'sym()'
+            model_name = sym()
+            sym = symbol_by_name(model_name)
+        if issubclass(sym, Model):
             return sym
         raise TypeError(
             "Symbol '{}' is not a Django model".format(model_name))

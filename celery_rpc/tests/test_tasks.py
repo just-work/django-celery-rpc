@@ -198,8 +198,7 @@ class UpdateTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
         char_val = str(uuid4())
         expected = get_model_dict(self.models[0])
 
-        with self.assertRaisesRegexp(
-                ModelTaskError, r'No module named (not\.existing|\'not\')'):
+        with self.assertRaises(ModelTaskError):
             self.task.delay(self.MODEL_SYMBOL,
                             {'char': char_val, 'id': expected['id']},
                             serializer_cls='not.existing.symbol').get()
@@ -255,6 +254,7 @@ class GetSetTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
         m = PartialUpdateModel.objects.get(pk=m.pk)
         self.assertEquals(expected, m.f1)
         self.assertEquals(preserve_f2, m.f2)
+
 
 class CreateTaskTests(BaseTaskTests):
 
