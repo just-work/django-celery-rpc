@@ -25,3 +25,5 @@ CELERY_RPC_CONFIG = {
         'ModelTask': 'celery_rpc.tests.tasks.CustomModelTask'
     }
 }
+
+MIDDLEWARE_CLASSES = []

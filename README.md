@@ -55,7 +55,7 @@ CELERY_RPC_CONFIG = {
 }
 ```
 
-### client/
+### client
 
 setting.py:
 
@@ -114,7 +114,7 @@ span_client.filter('app.models:MyModel', kwargs=dict(filters_Q=(Q(a='1') | Q(b='
 Also, we can use both Q and lookups
 
 ```
-span_client.filter('app.models:MyModel', kwargs=dict(filter={'c__exact':'c'}, filters_Q=(Q(a='1') | Q(b='1')))
+span_client.filter('app.models:MyModel', kwargs=dict(filters={'c__exact':'c'}, filters_Q=(Q(a='1') | Q(b='1')))
 ```
 
 Exclude supported
@@ -192,11 +192,38 @@ p = p.create('apps.models:MyAnotherModel')
 p.run()
 ```
 
-In this example the transform task: 
- - take result of the previous create task
+In this example the `transform` task: 
+ - take result of the previous `create` task
  - extract value of "id" field from it
- - add this value to "defaults" by key "fk" 
- - append this dict to args of the next create task.  
+ - add this value to "defaults" by key "fk"
+ 
+After that next `create` task takes result of `transform` as input data
+
+### Add/delete m2m relations
+
+Lets take such models:
+
+```python
+class MyModel(models.Model):
+    str = models.CharField()
+    
+class MyManyToManyModel(models.Model):
+    m2m = models.ManyToManyField(MyModel, null=True)
+```
+
+Add relation between existing objects
+
+my_models = span_client.create('apps.models:MyModel' [{'str': 'monthy'}, {'str': 'python'}])
+m2m_model = span_client.create('apps.models:MyManyToManyModel', {m2m: [my_models[0]['id']]})
+
+# Will add 'python' to m2m_model.m2m where 'monty' already is
+data = dict('mymodel': my_models[1]['id'], 'mymanytomanymodel': m2m_model['id'])
+through = span_client.create('apps.models:MyManyToManyModel.m2m.through', data)
+
+# And next call will eliminate all relations where `mymodel__str` equals 'monty'
+p = span_client.pipe()
+p = p.filter('apps.models:MyManyToManyModel.m2m.through', {'mymodel__str': 'monthy'})
+p = p.delete('apps.models:MyManyToManyModel.m2m.through')
 
 ## Run server instance
 
@@ -243,7 +270,7 @@ Supported class names: ModelTask, ModelChangeTask, FunctionTask
  - Test support for RPC result backend from Celery.
  - Token auth and permissions support (like DRF).
  - Resource map and strict mode.
- - 
+ - ...
  
 ## Acknowledgements
 

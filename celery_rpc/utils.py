@@ -1,6 +1,10 @@
 # coding: utf-8
+
+from six.moves import reduce
+
 from kombu import Queue, utils
 from celery import Celery
+
 
 def create_celery_app(config=None, **opts):
     opts.setdefault('main', 'celery-rpc')
