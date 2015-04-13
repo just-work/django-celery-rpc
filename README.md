@@ -214,8 +214,10 @@ class MyManyToManyModel(models.Model):
 Add relation between existing objects
 
 ```python
-my_models = span_client.create('apps.models:MyModel' [{'str': 'monthy'}, {'str': 'python'}])
-m2m_model = span_client.create('apps.models:MyManyToManyModel', {m2m: [my_models[0]['id']]})
+my_models = span_client.create('apps.models:MyModel', 
+							   [{'str': 'monthy'}, {'str': 'python'}])
+m2m_model = span_client.create('apps.models:MyManyToManyModel',
+                               {m2m: [my_models[0]['id']]})
 
 # Will add 'python' to m2m_model.m2m where 'monty' already is
 data = dict('mymodel': my_models[1]['id'], 'mymanytomanymodel': m2m_model['id'])
