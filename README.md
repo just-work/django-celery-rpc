@@ -94,7 +94,11 @@ eggs_client = Client(CELERY_RPC_EGGS_CLIENT)
 
 ## Using client
 
-Filtering
+You can find more examples in tests.
+
+### Filtering
+
+Simple filtering example
 
 ```
 span_client.filter('app.models:MyModel', kwargs=dict(filter={'a__exact':'a'}))
@@ -140,6 +144,59 @@ List of all MyModel objects with high priority
 span_client.filter('app.models:MyModel', high_priority=True)
 ```
 
+### Creating
+
+Create one object
+
+```
+span_client.create('apps.models:MyModel', data={"a": "a"})
+```
+
+Bulk creating
+
+```
+span_client.create('apps.models:MyModel', data=[{"a": "a"}, {"a": "b"}])
+```
+
+### Pipe
+
+It's possible to pipeline tasks, so they will be executed in one transaction.
+
+```python
+p = span_client.pipe()
+p = p.create('apps.models:MyModel', data={"a": "a"})
+p = p.create('apps.models:MyAnotherModel', data={"b": "b"})
+p.run()
+```
+
+You can pass some arguments from previous task to the next.
+
+Suppose you have those models on the server
+
+```python
+class MyModel(models.Model):
+    a = models.CharField()
+    
+class MyAnotherModel(models.Model):
+    fk = models.ForeignKey(MyModel)
+    b = models.CharField()
+```
+
+You need to create instance of MyModel and instance of MyAnotherModel which reffers to MyModel
+
+```python
+p = span_client.pipe()
+p = p.create('apps.models:MyModel', data={"a": "a"})
+p = p.transform({"fk": "id"}, defaults={"b": "b"})
+p = p.create('apps.models:MyAnotherModel')
+p.run()
+```
+
+In this example the transform task: 
+ - take result of the previous create task
+ - extract value of "id" field from it
+ - add this value to "defaults" by key "fk" 
+ - append this dict to args of the next create task.  
 
 ## Run server instance
 
