@@ -217,10 +217,10 @@ Add relation between existing objects
 my_models = span_client.create('apps.models:MyModel', 
 							   [{'str': 'monthy'}, {'str': 'python'}])
 m2m_model = span_client.create('apps.models:MyManyToManyModel',
-                               {m2m: [my_models[0]['id']]})
+                               {'m2m': [my_models[0]['id']]})
 
 # Will add 'python' to m2m_model.m2m where 'monty' already is
-data = dict('mymodel': my_models[1]['id'], 'mymanytomanymodel': m2m_model['id'])
+data = {'mymodel': my_models[1]['id'], 'mymanytomanymodel': m2m_model['id']}
 through = span_client.create('apps.models:MyManyToManyModel.m2m.through', data)
 ```
 
