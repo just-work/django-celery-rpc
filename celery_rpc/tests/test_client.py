@@ -1,10 +1,12 @@
 from __future__ import absolute_import
+from datetime import datetime
 import mock
 
 from django.test import TestCase
 
 from .. import config, utils
 from ..client import Client
+from .utils import SimpleModelTestMixin
 
 
 class HighPriorityRequestTests(TestCase):
@@ -80,3 +82,33 @@ class HighPriorityRequestTests(TestCase):
         """ Method `call` support high priority requests
         """
         self._assertProxyMethodSupportHighPriority('call')
+
+
+class AlterIdentityTests(SimpleModelTestMixin, TestCase):
+    """ Access to models with alter identity field (not only PK field)
+    """
+    @classmethod
+    def setUpClass(cls):
+        """ Creates rpc-client object
+        """
+        cls.rpc_client = Client()
+
+    def setUp(self):
+        super(AlterIdentityTests, self).setUp()
+        self.data = {'datetime': datetime.max, 'char': self.models[0].char}
+        self.kwargs = {'identity': 'char'}
+
+    def testUpdate(self):
+        """ Update with alter identity field looks good.
+        """
+        r = self.rpc_client.update(self.MODEL_SYMBOL, self.data, self.kwargs)
+        self.assertEqual(datetime.max, r['datetime'])
+        self.assertEqual(datetime.max,
+                         self.MODEL.objects.get(pk=self.models[0].pk).datetime)
+
+    def testDelete(self):
+        """ Update with alter identity field looks good.
+        """
+        r = self.rpc_client.delete(self.MODEL_SYMBOL, self.data, self.kwargs)
+        self.assertIsNone(r)
+        self.assertFalse(self.MODEL.objects.filter(pk=self.models[0].pk).exists())

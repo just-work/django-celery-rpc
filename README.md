@@ -148,15 +148,55 @@ span_client.filter('app.models:MyModel', high_priority=True)
 
 Create one object
 
-```
+```python
 span_client.create('apps.models:MyModel', data={"a": "a"})
 ```
 
 Bulk creating
 
-```
+```python
 span_client.create('apps.models:MyModel', data=[{"a": "a"}, {"a": "b"}])
 ```
+
+### Updating
+
+Update one object by PK field name
+
+```python
+span_client.update('apps.models:MyModel', data={"id": 1, "a": "a"})
+```
+
+Update one object by special alias 'pk' which matched automatically to PK field
+
+```python
+span_client.update('apps.models:MyModel', data={"id": 1, "a": "a"})
+```
+
+Attention! Magic area! Update one object by any field you wish
+
+```python
+span_client.update('apps.models:MyModel', data={"alternative_key_field": 42, "a": "a"}, 
+				   {'identity': 'alternative_key_field'})
+```
+
+### Update or create, Delete and so on
+
+All cases are very similar. Try it you console!
+
+### Full list of supported model methods
+ 
+ - `filter` - select models
+ - `create` - create new models, raise exception if model exists
+ - `update` - update existing models
+ - `update_or_create` - update if exist or create new
+ - `delete` - delete existing models
+ - `getset` - set new state and return old state atomically 
+ 
+All method support options:
+
+ - `fields` - shrink result fields
+ - `serializer_cls` - fully qualified symbol name to DRF serializer class on server
+ - `identity` - field name which will be used rather than PK field (mindless for `filter`)
 
 ### Pipe
 

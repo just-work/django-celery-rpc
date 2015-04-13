@@ -75,14 +75,15 @@ class ModelTask(Task):
         if custom_serializer:
             base_serializer_class = self._import_serializer(custom_serializer)
 
+        identity_field = self.identity_field
+
         class GenericModelSerializer(base_serializer_class):
             class Meta(base_serializer_class.Meta):
                 model = model_class
 
             def get_identity(self, data):
-                pk_name = self.Meta.model._meta.pk.name
                 try:
-                    return data.get('pk', data.get(pk_name, None))
+                    return data.get(identity_field, data.get('pk', None))
                 except AttributeError:
                     return None
 
@@ -105,6 +106,12 @@ class ModelTask(Task):
         return self.model._meta.pk.name
 
     @property
+    def identity_field(self):
+        """ Name of field which used as key-field
+        """
+        return self.request.kwargs.get('identity') or self.pk_name
+
+    @property
     def default_queryset(self):
         return self._create_queryset(self.model)
 
@@ -124,17 +131,17 @@ class ModelChangeTask(ModelTask):
         :raise self.model.DoesNotExist: if cannot find object in single mode
 
         """
-        pk_name = self.pk_name
-        get_pk_value = lambda item: item.get('pk', item.get(pk_name))
+        identity_field = self.identity_field
+        get_identity = lambda item: item.get(identity_field, item.get('pk'))
         qs = self.default_queryset
         if using:
             qs.using(using)
         if isinstance(data, dict):
-            instance = qs.get(pk=get_pk_value(data))
+            instance = qs.get(**{identity_field: get_identity(data)})
             many = False
         else:
-            pk_values = [get_pk_value(item) for item in data]
-            instance = qs.filter(pk__in=pk_values)
+            identity_values = [get_identity(item) for item in data]
+            instance = qs.filter(**{identity_field + '__in': identity_values})
             many = True
         return instance, many
 

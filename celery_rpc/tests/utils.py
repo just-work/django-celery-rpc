@@ -18,10 +18,10 @@ def get_model_dict_from_list(models):
 class SimpleModelTestMixin(object):
     """ Helper for tests with model needs.
     """
-
+    MODEL = SimpleModel
     MODEL_SYMBOL = 'celery_rpc.tests.models:SimpleModel'
 
     def setUp(self):
-        self.models = AutoFixture(SimpleModel).create(5)
+        self.models = AutoFixture(self.MODEL).create(5)
 
     get_model_dict = staticmethod(get_model_dict)
