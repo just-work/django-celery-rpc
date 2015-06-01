@@ -11,6 +11,8 @@ except ImportError:
 FILTER_LIMIT = 1000
 # Default timeout for getting results
 GET_RESULT_TIMEOUT = 10
+# Pass remote exceptions to client as instances
+WRAP_REMOTE_ERRORS = False
 
 # Provide ability to change base task class for celery-rpc server tasks.
 # Example: { 'ModelChangeTask': my.own.ModelChangeTask }

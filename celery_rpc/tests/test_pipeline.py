@@ -7,7 +7,7 @@ from autofixture import AutoFixture
 from django.test import TransactionTestCase
 
 from ..client import Pipe, Client
-from .utils import SimpleModelTestMixin
+from .utils import SimpleModelTestMixin, unpack_exception
 from .models import SimpleModel, FkSimpleModel
 
 
@@ -72,16 +72,25 @@ class PipelineTests(BasePipelineTests):
         p = self.pipe
         p = p.delete(self.MODEL_SYMBOL, self.get_model_dict(self.models[0]))
         p = p.delete('invalid model symbol raise exception', {})
+        with self.assertRaisesRegexp(Exception, "No module named"):
+            with unpack_exception():
+                p.run()
+        self.assertTrue(SimpleModel.objects.filter(
+            pk=self.models[0].pk).exists())
 
-        self.assertRaises(p.client.ResponseError, p.run)
-        self.assertTrue(SimpleModel.objects.filter(pk=self.models[0].pk).exists())
+    def testAtomicPipelineRemoteError(self):
+        """ Perform testAtomicPipeline with remote errors handling
+        in another mode."""
+        old = self.client._app.conf['WRAP_REMOTE_ERRORS']
+        self.client._app.conf['WRAP_REMOTE_ERRORS'] = not old
+        return self.testAtomicPipeline()
 
     @expectedFailure
     def testPatchTransformer(self):
         """ TODO `patch` updates result of previous task.
         """
         p = self.pipe.filter(self.MODEL_SYMBOL,
-                         kwargs=dict(filters={'pk': self.models[0].pk}))
+                             kwargs=dict(filters={'pk': self.models[0].pk}))
         r = p.patch({'char': 'abc'})
 
         expected = [[self.get_model_dict(self.models[0])],
@@ -116,6 +125,13 @@ class TransformTests(BasePipelineTests):
         self.assertEqual(expected, r)
         self.assertRaises(SimpleModel.DoesNotExist,
                           SimpleModel.objects.get, pk=self.models[0].pk)
+
+    def testDeleteTransformerRemoteError(self):
+        """ Perform testDeleteTransformer with remote errors handling
+        in another mode."""
+        old = self.client._app.conf['WRAP_REMOTE_ERRORS']
+        self.client._app.conf['WRAP_REMOTE_ERRORS'] = not old
+        return self.testDeleteTransformer()
 
     def testCreateTransformer(self):
         p = self.pipe.filter(self.MODEL_SYMBOL,
@@ -197,12 +213,13 @@ class ResultTests(TransformTests):
         for el in defaults:
             p = p.result(0)
             p = p.translate(self.TRANSFORM_MAP,
-                                    kwargs=dict(defaults=el))
+                            kwargs=dict(defaults=el))
             p = p.create(self.FK_MODEL_SYMBOL)
 
         r = p.run()
 
         expect_fk_id = r[0]['id']
-        expect = FkSimpleModel.objects.filter(char__in=six.moves.range(DEFAULTS_COUNT),
-                                                  fk=expect_fk_id)
+        expect = FkSimpleModel.objects.filter(
+            char__in=six.moves.range(DEFAULTS_COUNT),
+            fk=expect_fk_id)
         self.assertEquals(expect.count(), DEFAULTS_COUNT)

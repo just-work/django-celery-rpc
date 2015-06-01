@@ -9,7 +9,23 @@ from rest_framework.serializers import ModelSerializer
 
 from . import config
 from .utils import symbol_by_name
-from .exceptions import ModelTaskError, RestFrameworkError
+from .exceptions import ModelTaskError, RestFrameworkError, RemoteException
+
+
+class remote_error_wrapping(object):
+
+    def __init__(self, task):
+        self.task = task
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """ Unpacks exception from RemoteException wrapper, if enabled in
+        celery_rpc config."""
+        if exc_val and self.task.app.conf['WRAP_REMOTE_ERRORS']:
+            serializer = self.task.app.conf['CELERY_TASK_SERIALIZER']
+            raise RemoteException(exc_val, serializer)
 
 
 class ModelTask(Task):
@@ -20,14 +36,16 @@ class ModelTask(Task):
     def __call__(self, model, *args, **kwargs):
         """ Prepare context for calling task function.
         """
-        self.request.model = self._import_model(model)
-        args = [model] + list(args)
-        try:
-            return self.run(*args, **kwargs)
-        except ModelTaskError:
-            raise
-        except Exception as e:
-            raise ModelTaskError('Unhandled model error', str(type(e)), str(e))
+        with remote_error_wrapping(self):
+            self.request.model = self._import_model(model)
+            args = [model] + list(args)
+            try:
+                return self.run(*args, **kwargs)
+            except ModelTaskError:
+                raise
+            except Exception as e:
+                raise ModelTaskError('Unhandled model error',
+                                     str(type(e)), str(e))
 
     @staticmethod
     def _import_model(model_name):
@@ -180,9 +198,10 @@ class FunctionTask(Task):
     def __call__(self, function,  *args, **kwargs):
         """ Prepare context for calling task function.
         """
-        self.request.function = self._import_function(function)
-        args = [function] + list(args)
-        return self.run(*args, **kwargs)
+        with remote_error_wrapping(self):
+            self.request.function = self._import_function(function)
+            args = [function] + list(args)
+            return self.run(*args, **kwargs)
 
     @staticmethod
     def _import_function(func_name):

@@ -4,6 +4,7 @@ import os
 from celery.exceptions import TimeoutError
 
 from . import utils
+from celery.utils.serialization import create_exception_cls
 from .config import GET_RESULT_TIMEOUT
 from .exceptions import RestFrameworkError
 
@@ -269,8 +270,15 @@ class Client(object):
             # !!! Not working with JSON serializer
             raise
         except Exception as e:
-            raise self.ResponseError(
-                'Something goes wrong while getting results', e)
+            exc = self._unpack_exception(e)
+            if not exc:
+                exc = self.ResponseError(
+                    'Something goes wrong while getting results', e)
+            raise exc
+
+    def _unpack_exception(self, error):
+        wrap_errors = self._app.conf['WRAP_REMOTE_ERRORS']
+        return utils.unpack_exception(error, wrap_errors)
 
     def pipe(self):
         """ Create pipeline for RPC request
