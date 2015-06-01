@@ -152,7 +152,7 @@ class ErrorRegistryTestCase(TestCase):
         self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = True
         self.registry = exceptions.remote_exception_registry
         self.registry.flush()
-        self.module = "exceptions"
+        self.module = ValueError.__module__
         self.name = "ValueError"
         self.args = (100500,)
         self.data = ("application/json", 'utf-8', json.dumps(self.args))
