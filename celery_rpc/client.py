@@ -4,9 +4,8 @@ import os
 from celery.exceptions import TimeoutError
 
 from . import utils
-from celery.utils.serialization import create_exception_cls
 from .config import GET_RESULT_TIMEOUT
-from .exceptions import RestFrameworkError
+from .exceptions import RestFrameworkError, remote_exception_registry
 
 TEST_MODE = bool(os.environ.get('CELERY_RPC_TEST_MODE', False))
 
@@ -51,6 +50,8 @@ class Client(object):
             self._task_stubs = rpc.tasks
         else:
             self._task_stubs = self._register_stub_tasks(self._app)
+
+        self.errors = remote_exception_registry
 
     def prepare_task(self, task_name, args, kwargs, high_priority=False,
                      **options):

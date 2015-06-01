@@ -2,6 +2,7 @@
 
 # $Id: $
 import json
+from django.core.exceptions import PermissionDenied
 from django.test import TestCase
 
 import mock
@@ -100,7 +101,8 @@ class ErrorTunnelServerTestCase(RemoteErrorsTestMixin, TestCase):
             serializer=self.serializer)
 
         inner = exc.unpack_exception()
-        self.assertIsInstance(inner, ValueError)
+        self.assertIsInstance(inner,
+                              exceptions.remote_exception_registry.ValueError)
         self.assertEqual(inner.args, (100500,))
 
 
@@ -134,3 +136,89 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
                 method(*args, **kwargs)
 
         self.assertTupleEqual(r.exception.args, error.args)
+
+
+class ErrorRegistryTestCase(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        """ Creates rpc-client object
+        """
+        cls.rpc_client = Client()
+
+    def setUp(self):
+        super(ErrorRegistryTestCase, self).setUp()
+        self._wrap_errors = self.rpc_client._app.conf['WRAP_REMOTE_ERRORS']
+        self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = True
+        self.registry = exceptions.remote_exception_registry
+        self.registry.flush()
+        self.module = "exceptions"
+        self.name = "ValueError"
+        self.args = (100500,)
+        self.data = ("application/json", 'utf-8', json.dumps(self.args))
+
+    def tearDown(self):
+        super(ErrorRegistryTestCase, self).tearDown()
+        self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = self._wrap_errors
+
+    def testUnpackNativeException(self):
+        exc = self.registry.unpack_exception(self.module, self.name, self.data)
+        self.assertIsInstance(exc, ValueError)
+        self.assertIsInstance(exc, self.registry.RemoteError)
+        self.assertTupleEqual(exc.args, self.args)
+
+    def testUnpackExistingException(self):
+        self.module = "django.core.exceptions"
+        self.name = "PermissionDenied"
+        exc = self.registry.unpack_exception(self.module, self.name, self.data)
+        self.assertIsInstance(exc, PermissionDenied)
+        self.assertIsInstance(exc, self.registry.RemoteError)
+        self.assertTupleEqual(exc.args, self.args)
+
+    def testUnpackUnknownException(self):
+        self.module = "nonexistent.module"
+        self.name = "NonexistentError"
+        exc = self.registry.unpack_exception(self.module, self.name, self.data)
+        self.assertIsInstance(exc, self.registry.RemoteError)
+        self.assertTupleEqual(exc.args, self.args)
+
+    def assertRemoteErrorInClient(self, error=None):
+        error = error or ValueError(100500)
+        # XXX
+        with mock.patch('celery_rpc.base.FunctionTask.function',
+                               side_effect=error):
+            with self.assertRaises(self.registry.RemoteError) as ctx:
+                self.rpc_client.call('celery_rpc.tests.utils.fail')
+        self.assertIsInstance(ctx.exception, error.__class__)
+
+    def testClientRemoteErrorBaseClasses(self):
+        self.assertRemoteErrorInClient(error=ValueError(100500,))
+        self.assertRemoteErrorInClient(error=PermissionDenied("WTF"))
+
+    def testExceptNativeRemoteError(self):
+        with self.assertRaises(self.rpc_client.errors.ValueError):
+            raise self.registry.unpack_exception(
+                self.module, self.name, self.data)
+
+    def testExceptExistingRemoteError(self):
+        self.module = "django.core.exceptions"
+        self.name = "PermissionDenied"
+        with self.assertRaises(self.rpc_client.errors.PermissionDenied):
+            raise self.registry.unpack_exception(
+                self.module, self.name, self.data)
+
+    def testExceptUnknownRemoteError(self):
+        self.module = "nonexistent.module"
+        self.name = "NonexistentError"
+        with self.assertRaises(self.rpc_client.errors.NonexistentError):
+            raise self.registry.unpack_exception(
+                self.module, self.name, self.data)
+
+    def testRemoteErrorHierarchy(self):
+        parent = self.rpc_client.errors.IndexError
+        error = self.rpc_client.errors.subclass(parent, "ValueError")
+        exc = self.registry.unpack_exception(self.module, self.name, self.data)
+
+        self.assertIsInstance(exc, self.rpc_client.errors.RemoteError)
+        self.assertIsInstance(exc, self.rpc_client.errors.IndexError)
+        self.assertIsInstance(exc, self.rpc_client.errors.ValueError)
