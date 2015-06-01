@@ -350,6 +350,15 @@ except django.core.exceptions.ObjectDoesNotExist as e:
     handle_error(e)
 ```
 
+If original exception hierarchy is needed:
+
+```python
+
+SomeBaseError = rpc_client.errors.SomeBaseError
+
+DerivedError = rpc_client.errors.subclass(SomeBaseError, "DerivedError")
+```
+
 
 ## TODO
 
