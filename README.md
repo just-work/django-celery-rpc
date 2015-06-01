@@ -313,6 +313,44 @@ Supported class names: ModelTask, ModelChangeTask, FunctionTask
 
 ```
 
+### Handling remote exceptions individually
+
+```python
+# Both server and client
+CELERY_RPC_CONFIG['WRAP_REMOTE_ERRORS'] = True
+```
+
+After enabling remote exception wrapping client will raise same errors happened
+ on the server side.
+If client side has no error defined (i.e. no package installed), 
+`Client.RemoteError` will be raised.
+Also, `Client.RemoteError` is a base for all exceptions on the client side.
+
+For unknown exceptions this code is valid:
+
+```python
+try:
+    result = rpc_client.call("remote_func")
+except rpc_client.errors.SomeUnknownError as e:
+    # here a stub for remote SomeUnknownError is handled
+    print (e.args)
+```
+
+For known exceptions both variants work:
+
+```python
+
+try:
+    result = rpc_client.call("remote_func")
+except rpc_client.errors.MultipleObjectsReturned as e:
+    # django.core.exceptions.MultipleObjectsReturned
+    handle_error(e)
+except django.core.exceptions.ObjectDoesNotExist as e:
+    # django.core.exceptions.ObjectDoesNotExist 
+    handle_error(e)
+```
+
+
 ## TODO
 
  - Set default non-generic model serializer.
