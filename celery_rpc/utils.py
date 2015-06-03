@@ -1,6 +1,7 @@
 # coding: utf-8
 
 from six.moves import reduce
+from celery.utils.serialization import UnpickleableExceptionWrapper
 
 from kombu import Queue, utils
 from celery import Celery
@@ -55,3 +56,27 @@ TRANSLATE_TASK_NAME = 'celery_rpc.translate'
 RESULT_TASK_NAME = 'celery_rpc.result'
 
 TASK_NAME_MAP = {n: v for n, v in locals().items() if n.endswith('_TASK_NAME')}
+
+
+def unpack_exception(error, wrap_errors):
+    """ Extracts original error from RemoteException description
+    :param error: remote exception stub (or real) instance
+    :type error: RemoteException
+    :param wrap_errors: flag for enabling errors unpacking
+    :type wrap_errors: bool
+    :return: original error instance, if unpacking is successful;
+        None otherwise.
+    :rtype: Exception
+    """
+    if not wrap_errors:
+        return None
+    if isinstance(error, UnpickleableExceptionWrapper):
+        error = error.restore()
+    if not error.__class__.__name__ == 'RemoteException':
+        return None
+    if not hasattr(error, 'unpack_exception'):
+        # Stub exception
+        from celery_rpc.exceptions import RemoteException
+        error = RemoteException(error.args)
+    error = error.unpack_exception()
+    return error

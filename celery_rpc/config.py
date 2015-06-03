@@ -9,8 +9,13 @@ except ImportError:
 
 # Default limit for results of filter call
 FILTER_LIMIT = 1000
+
 # Default timeout for getting results
 GET_RESULT_TIMEOUT = 10
+
+# Pass exceptions from server to client as instances if true.
+# By default exceptions are passed as a string.
+WRAP_REMOTE_ERRORS = False
 
 # Provide ability to change base task class for celery-rpc server tasks.
 # Example: { 'ModelChangeTask': my.own.ModelChangeTask }
@@ -47,6 +52,6 @@ CELERYD_TASK_TIME_LIMIT = GET_RESULT_TIMEOUT * 2
 _codecs_registered = False
 if not _codecs_registered:
     from .codecs import register_codecs
+
     register_codecs()
     _codecs_registered = True
-

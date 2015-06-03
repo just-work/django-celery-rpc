@@ -23,7 +23,8 @@ CELERY_RPC_CONFIG = {
     'CELERY_ALWAYS_EAGER': True,
     'OVERRIDE_BASE_TASKS': {
         'ModelTask': 'celery_rpc.tests.tasks.CustomModelTask'
-    }
+    },
+    'WRAP_REMOTE_ERRORS': True
 }
 
 MIDDLEWARE_CLASSES = []

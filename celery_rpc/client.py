@@ -5,7 +5,7 @@ from celery.exceptions import TimeoutError
 
 from . import utils
 from .config import GET_RESULT_TIMEOUT
-from .exceptions import RestFrameworkError
+from .exceptions import RestFrameworkError, remote_exception_registry
 
 TEST_MODE = bool(os.environ.get('CELERY_RPC_TEST_MODE', False))
 
@@ -50,6 +50,8 @@ class Client(object):
             self._task_stubs = rpc.tasks
         else:
             self._task_stubs = self._register_stub_tasks(self._app)
+
+        self.errors = remote_exception_registry
 
     def prepare_task(self, task_name, args, kwargs, high_priority=False,
                      **options):
@@ -269,8 +271,15 @@ class Client(object):
             # !!! Not working with JSON serializer
             raise
         except Exception as e:
-            raise self.ResponseError(
-                'Something goes wrong while getting results', e)
+            exc = self._unpack_exception(e)
+            if not exc:
+                exc = self.ResponseError(
+                    'Something goes wrong while getting results', e)
+            raise exc
+
+    def _unpack_exception(self, error):
+        wrap_errors = self._app.conf['WRAP_REMOTE_ERRORS']
+        return utils.unpack_exception(error, wrap_errors)
 
     def pipe(self):
         """ Create pipeline for RPC request
