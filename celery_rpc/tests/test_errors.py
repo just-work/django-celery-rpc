@@ -2,14 +2,16 @@
 
 # $Id: $
 import json
+
+from celery.utils.serialization import UnpickleableExceptionWrapper
 from django.core.exceptions import PermissionDenied
 from django.test import TestCase
-
 import mock
 
 from celery_rpc import tasks
 from celery_rpc.client import Client
 from celery_rpc import exceptions
+from celery_rpc.exceptions import RestFrameworkError
 from celery_rpc.tests.utils import SimpleModelTestMixin
 
 
@@ -28,7 +30,7 @@ class RemoteErrorsTestMixin(SimpleModelTestMixin):
         self.assertErrorTunnelException(
             'call',
             'celery_rpc.base.FunctionTask.function',
-            args=('celery_rpc.tests.utils.fail',(), {}),
+            args=('celery_rpc.tests.utils.fail', (), {}),
         )
 
     def testFilterTask(self):
@@ -51,6 +53,7 @@ class RemoteErrorsTestMixin(SimpleModelTestMixin):
             'celery_rpc.base.ModelChangeTask._import_model',
             args=(self.MODEL_SYMBOL, {'char': 'abc'}),
         )
+
     def testUpdateOrCreateTask(self):
         self.assertErrorTunnelException(
             'update_or_create',
@@ -77,7 +80,6 @@ class RemoteErrorsTestMixin(SimpleModelTestMixin):
 
 
 class ErrorTunnelServerTestCase(RemoteErrorsTestMixin, TestCase):
-
     def gettestee(self, name):
         return getattr(tasks, name)
 
@@ -105,9 +107,19 @@ class ErrorTunnelServerTestCase(RemoteErrorsTestMixin, TestCase):
                               exceptions.remote_exception_registry.ValueError)
         self.assertEqual(inner.args, (100500,))
 
+    def testTunnelDisabled(self):
+        error = ValueError(100500)
+        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = False
+        task = self.gettestee('call')
+        patch = 'celery_rpc.base.FunctionTask.function'
+        args = ('celery_rpc.tests.utils.fail', (), {}),
+        with mock.patch(patch, side_effect=error):
+            r = task.apply(*args)
+        remote_exception_stub = r.get(propagate=False)
+        self.assertIsInstance(remote_exception_stub, ValueError)
+
 
 class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
-
     @classmethod
     def setUpClass(cls):
         """ Creates rpc-client object
@@ -128,7 +140,7 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
 
     def assertErrorTunnelException(self, name, patch, args=(), kwargs=None):
         kwargs = kwargs or {}
-        error = ValueError(100500)
+        error = RestFrameworkError(100500)
 
         method = self.gettestee(name)
         with mock.patch(patch, side_effect=error):
@@ -137,9 +149,53 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
 
         self.assertTupleEqual(r.exception.args, error.args)
 
+    def testUnpackingFromTunnelDisabled(self):
+        """ Error wrapping disabled on server, enabled on client."""
+        error = ValueError(100500)
+        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = False
+        method = self.gettestee('call')
+        patch = 'celery_rpc.base.FunctionTask.function'
+        args = ('celery_rpc.tests.utils.fail', (), {})
+        with mock.patch(patch, side_effect=error):
+            with mock.patch('celery_rpc.utils.unpack_exception',
+                            return_value=None) as unpack_mock:
+                with self.assertRaises(self.rpc_client.ResponseError) as ctx:
+                    method(*args)
+        response_error = ctx.exception
+        self.assertIsInstance(response_error.args[1], ValueError)
+        # checking that non-wrapped exception is passed to unpacking helper
+        # and that unpack flag is True.
+        unpack_mock.assert_called_with(error, True)
+
+    def testNotUnpackingFromTunnelEnabled(self):
+        """ Error wrapping disabled on client, enabled on server."""
+        error = ValueError(100500)
+        serializer = tasks.rpc.conf['CELERY_RESULT_SERIALIZER']
+        wrapped = exceptions.RemoteException(error, serializer)
+        method = self.gettestee('call')
+        patch = 'celery_rpc.base.FunctionTask.function'
+        args = ('celery_rpc.tests.utils.fail', (), {})
+        self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = False
+        with mock.patch(patch, side_effect=error):
+            with mock.patch('celery_rpc.utils.unpack_exception',
+                            return_value=None) as unpack_mock:
+                with self.assertRaises(self.rpc_client.ResponseError) as ctx:
+                    method(*args)
+        response = ctx.exception
+        wrapper = response.args[1]
+        self.assertIsInstance(wrapper, UnpickleableExceptionWrapper)
+        # checking that wrapped exception is passed to unpacking helper
+        # and that unpack flag is False.
+        unpack_mock.assert_called_with(wrapper, False)
+        remote_error = wrapper.restore()
+        remote_error_cls = remote_error.__class__
+        self.assertEqual(remote_error_cls.__name__, "RemoteException")
+        self.assertEqual(remote_error_cls.__module__, "celery_rpc.exceptions")
+        args = remote_error.args
+        self.assertTupleEqual(args, wrapped.args)
+
 
 class ErrorRegistryTestCase(TestCase):
-
     @classmethod
     def setUpClass(cls):
         """ Creates rpc-client object
@@ -184,15 +240,14 @@ class ErrorRegistryTestCase(TestCase):
 
     def assertRemoteErrorInClient(self, error=None):
         error = error or ValueError(100500)
-        # XXX
         with mock.patch('celery_rpc.base.FunctionTask.function',
-                               side_effect=error):
+                        side_effect=error):
             with self.assertRaises(self.registry.RemoteError) as ctx:
                 self.rpc_client.call('celery_rpc.tests.utils.fail')
         self.assertIsInstance(ctx.exception, error.__class__)
 
     def testClientRemoteErrorBaseClasses(self):
-        self.assertRemoteErrorInClient(error=ValueError(100500,))
+        self.assertRemoteErrorInClient()  # Native error
         self.assertRemoteErrorInClient(error=PermissionDenied("WTF"))
 
     def testExceptNativeRemoteError(self):

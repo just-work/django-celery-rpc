@@ -12,7 +12,12 @@ from .utils import symbol_by_name
 from .exceptions import ModelTaskError, RestFrameworkError, RemoteException
 
 
-class remote_error_wrapping(object):
+class remote_error(object):
+    """ Transforms all raised exceptions to a RemoteException wrapper,
+    if enabled if CELERY_RPC_CONFIG['WRAP_REMOTE_ERRORS'].
+
+    Wrapper serializes exception args with CELERY_TASK_SERIALIZER of rpc app.
+    """
 
     def __init__(self, task):
         self.task = task
@@ -36,7 +41,7 @@ class ModelTask(Task):
     def __call__(self, model, *args, **kwargs):
         """ Prepare context for calling task function.
         """
-        with remote_error_wrapping(self):
+        with remote_error(self):
             self.request.model = self._import_model(model)
             args = [model] + list(args)
             try:
@@ -195,10 +200,10 @@ class FunctionTask(Task):
     """
     abstract = True
 
-    def __call__(self, function,  *args, **kwargs):
+    def __call__(self, function, *args, **kwargs):
         """ Prepare context for calling task function.
         """
-        with remote_error_wrapping(self):
+        with remote_error(self):
             self.request.function = self._import_function(function)
             args = [function] + list(args)
             return self.run(*args, **kwargs)
@@ -248,5 +253,6 @@ def atomic_commit_on_success():
         return transaction.atomic
     else:
         raise RuntimeError('Invalid Django version: {}'.format(ver))
+
 
 atomic_commit_on_success = atomic_commit_on_success()

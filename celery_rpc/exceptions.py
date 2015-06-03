@@ -56,12 +56,10 @@ class RemoteExceptionRegistry(object):
 
     def unpack_exception(self, module, name, args):
         """ Instantiates exception stub for original exception
+
         :param module: module name for original exception
-        :type module: str
         :param name: class name for original exception
-        :type name: str
         :param args: RemoteException.args
-        :type args: list or tuple
         :return: new constructed exception
         :rtype: self.RemoteError subclass
         """
