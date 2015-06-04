@@ -1,8 +1,8 @@
 # coding: utf-8
-from kombu.exceptions import ContentDisallowed
-
-from kombu.serialization import dumps, loads, registry
 from celery.backends.base import create_exception_cls
+
+from kombu.exceptions import ContentDisallowed
+from kombu.serialization import dumps, loads, registry
 from kombu.utils.encoding import from_utf8
 
 from celery_rpc.utils import symbol_by_name, DEFAULT_EXC_SERIALIZER

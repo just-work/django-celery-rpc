@@ -31,9 +31,7 @@ class remote_error(object):
         if isinstance(exc_val, RemoteException):
             return
         if exc_val and self.task.app.conf['WRAP_REMOTE_ERRORS']:
-            print exc_type
             serializer = self.task.app.conf['CELERY_RESULT_SERIALIZER']
-            print serializer
             raise RemoteException(exc_val, serializer)
 
 
