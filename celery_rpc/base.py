@@ -28,8 +28,12 @@ class remote_error(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         """ Unpacks exception from RemoteException wrapper, if enabled in
         celery_rpc config."""
+        if isinstance(exc_val, RemoteException):
+            return
         if exc_val and self.task.app.conf['WRAP_REMOTE_ERRORS']:
-            serializer = self.task.app.conf['CELERY_TASK_SERIALIZER']
+            print exc_type
+            serializer = self.task.app.conf['CELERY_RESULT_SERIALIZER']
+            print serializer
             raise RemoteException(exc_val, serializer)
 
 

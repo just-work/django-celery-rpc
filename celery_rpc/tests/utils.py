@@ -35,7 +35,6 @@ class RemoteException(Exception):
 
 def fail(*args):
     raise ValidationError({"field": "gavno"})
-    raise RemoteException(*args)
 
 
 class unpack_exception(object):

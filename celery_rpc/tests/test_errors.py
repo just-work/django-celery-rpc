@@ -102,7 +102,7 @@ class ErrorTunnelServerTestCase(RemoteErrorsTestMixin, TestCase):
             ValueError(100500),
             serializer=self.serializer)
 
-        inner = exc.unpack_exception()
+        inner = exc.unpack_exception(self.serializer)
         self.assertIsInstance(inner,
                               exceptions.remote_exception_registry.ValueError)
         self.assertEqual(inner.args, (100500,))
@@ -130,6 +130,7 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
         super(ErrorTunnelClientTestCase, self).setUp()
         self._wrap_errors = self.rpc_client._app.conf['WRAP_REMOTE_ERRORS']
         self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = True
+        self.serializer = self.rpc_client._app.conf['CELERY_RESULT_SERIALIZER']
 
     def tearDown(self):
         super(ErrorTunnelClientTestCase, self).tearDown()
@@ -165,7 +166,7 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
         self.assertIsInstance(response_error.args[1], ValueError)
         # checking that non-wrapped exception is passed to unpacking helper
         # and that unpack flag is True.
-        unpack_mock.assert_called_with(error, True)
+        unpack_mock.assert_called_with(error, True, serializer=self.serializer)
 
     def testNotUnpackingFromTunnelEnabled(self):
         """ Error wrapping disabled on client, enabled on server."""
@@ -186,7 +187,9 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
         self.assertIsInstance(wrapper, UnpickleableExceptionWrapper)
         # checking that wrapped exception is passed to unpacking helper
         # and that unpack flag is False.
-        unpack_mock.assert_called_with(wrapper, False)
+
+        unpack_mock.assert_called_with(wrapper, False,
+                                       serializer=self.serializer)
         remote_error = wrapper.restore()
         remote_error_cls = remote_error.__class__
         self.assertEqual(remote_error_cls.__name__, "RemoteException")
@@ -211,14 +214,18 @@ class ErrorRegistryTestCase(TestCase):
         self.module = ValueError.__module__
         self.name = "ValueError"
         self.args = (100500,)
-        self.data = ("application/json", 'utf-8', json.dumps(self.args))
+        self.serializer = 'json'
+
+    @property
+    def data(self):
+        return json.dumps([self.module, self.name, self.args])
 
     def tearDown(self):
         super(ErrorRegistryTestCase, self).tearDown()
         self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = self._wrap_errors
 
     def testUnpackNativeException(self):
-        exc = self.registry.unpack_exception(self.module, self.name, self.data)
+        exc = self.registry.unpack_exception(self.data, self.serializer)
         self.assertIsInstance(exc, ValueError)
         self.assertIsInstance(exc, self.registry.RemoteError)
         self.assertTupleEqual(exc.args, self.args)
@@ -226,7 +233,7 @@ class ErrorRegistryTestCase(TestCase):
     def testUnpackExistingException(self):
         self.module = "django.core.exceptions"
         self.name = "PermissionDenied"
-        exc = self.registry.unpack_exception(self.module, self.name, self.data)
+        exc = self.registry.unpack_exception(self.data, self.serializer)
         self.assertIsInstance(exc, PermissionDenied)
         self.assertIsInstance(exc, self.registry.RemoteError)
         self.assertTupleEqual(exc.args, self.args)
@@ -234,7 +241,7 @@ class ErrorRegistryTestCase(TestCase):
     def testUnpackUnknownException(self):
         self.module = "nonexistent.module"
         self.name = "NonexistentError"
-        exc = self.registry.unpack_exception(self.module, self.name, self.data)
+        exc = self.registry.unpack_exception(self.data, self.serializer)
         self.assertIsInstance(exc, self.registry.RemoteError)
         self.assertTupleEqual(exc.args, self.args)
 
@@ -252,27 +259,24 @@ class ErrorRegistryTestCase(TestCase):
 
     def testExceptNativeRemoteError(self):
         with self.assertRaises(self.rpc_client.errors.ValueError):
-            raise self.registry.unpack_exception(
-                self.module, self.name, self.data)
+            raise self.registry.unpack_exception(self.data, self.serializer)
 
     def testExceptExistingRemoteError(self):
         self.module = "django.core.exceptions"
         self.name = "PermissionDenied"
         with self.assertRaises(self.rpc_client.errors.PermissionDenied):
-            raise self.registry.unpack_exception(
-                self.module, self.name, self.data)
+            raise self.registry.unpack_exception(self.data, self.serializer)
 
     def testExceptUnknownRemoteError(self):
         self.module = "nonexistent.module"
         self.name = "NonexistentError"
         with self.assertRaises(self.rpc_client.errors.NonexistentError):
-            raise self.registry.unpack_exception(
-                self.module, self.name, self.data)
+            raise self.registry.unpack_exception(self.data, self.serializer)
 
     def testRemoteErrorHierarchy(self):
         parent = self.rpc_client.errors.IndexError
         error = self.rpc_client.errors.subclass(parent, "ValueError")
-        exc = self.registry.unpack_exception(self.module, self.name, self.data)
+        exc = self.registry.unpack_exception(self.data, self.serializer)
 
         self.assertIsInstance(exc, self.rpc_client.errors.RemoteError)
         self.assertIsInstance(exc, self.rpc_client.errors.IndexError)

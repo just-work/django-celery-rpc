@@ -1,9 +1,11 @@
 # coding: utf-8
+from kombu.exceptions import ContentDisallowed
 
-from kombu.serialization import dumps, loads
+from kombu.serialization import dumps, loads, registry
 from celery.backends.base import create_exception_cls
+from kombu.utils.encoding import from_utf8
 
-from celery_rpc.utils import symbol_by_name
+from celery_rpc.utils import symbol_by_name, DEFAULT_EXC_SERIALIZER
 
 
 class ModelTaskError(Exception):
@@ -19,7 +21,7 @@ class RestFrameworkError(ModelTaskError):
 class RemoteException(Exception):
     """ Wrapper for remote exceptions."""
 
-    def __init__(self, exc, serializer='pickle'):
+    def __init__(self, exc, serializer=DEFAULT_EXC_SERIALIZER):
         """
         :param exc: Exception instance or RemoteException.args
         :type exc: BaseException subclass, list or tuple
@@ -28,17 +30,18 @@ class RemoteException(Exception):
         """
         if isinstance(exc, BaseException):
             cls = exc.__class__
-            exc_args = dumps(exc.args, serializer=serializer)
+            exc_args = exc.args
             args = (cls.__module__, cls.__name__, exc_args)
+            args = [dumps(args, serializer=serializer)[2]]
         elif isinstance(exc, (list, tuple)):
             args = exc
         else:
             raise ValueError("Need a BaseException object")
         super(RemoteException, self).__init__(*args)
 
-    def unpack_exception(self):
-        module, name, args = self.args
-        return remote_exception_registry.unpack_exception(module, name, args)
+    def unpack_exception(self, serializer):
+        return remote_exception_registry.unpack_exception(
+            self.args[0], serializer)
 
 
 class RemoteExceptionRegistry(object):
@@ -54,7 +57,7 @@ class RemoteExceptionRegistry(object):
     def __init__(self):
         self.__registry = {}
 
-    def unpack_exception(self, module, name, args):
+    def unpack_exception(self, data, serializer):
         """ Instantiates exception stub for original exception
 
         :param module: module name for original exception
@@ -65,12 +68,17 @@ class RemoteExceptionRegistry(object):
         """
         try:
             # unpacking RemoteException args
-            content_type, content_encoding, data = args
+            content_type, content_encoding, dumps = registry._encoders[serializer]
+
+            data = loads(data, content_type, content_encoding)
+            module, name, args = data
             try:
                 # trying to import original exception
                 original = symbol_by_name("%s.%s" % (module, name))
                 # creating parent class for original error and self.RemoteError
-                parent = type("Remote" + name, (original, self.RemoteError),
+
+                class_name = from_utf8("Remote" + name)
+                parent = type(class_name, (original, self.RemoteError),
                               {'__module__': module})
             except (AttributeError, ImportError):
                 # alternative way for unknown errors
@@ -79,13 +87,11 @@ class RemoteExceptionRegistry(object):
             # create and cache exception stub class
             if name not in self.__registry:
                 self.__registry[name] = create_exception_cls(
-                    name, module, parent=parent)
+                    from_utf8(name), module, parent=parent)
             exc_class = self.__registry[name]
 
-            # deserialize exception args and instantiate exception object
-            args = loads(data, content_type, content_encoding)
             return exc_class(*args)
-        except ValueError:
+        except (ValueError, ContentDisallowed):
             # loads error
             return None
 

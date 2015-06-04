@@ -57,8 +57,10 @@ RESULT_TASK_NAME = 'celery_rpc.result'
 
 TASK_NAME_MAP = {n: v for n, v in locals().items() if n.endswith('_TASK_NAME')}
 
+DEFAULT_EXC_SERIALIZER = 'json'
 
-def unpack_exception(error, wrap_errors):
+
+def unpack_exception(error, wrap_errors, serializer=DEFAULT_EXC_SERIALIZER):
     """ Extracts original error from RemoteException description
     :param error: remote exception stub (or real) instance
     :type error: RemoteException
@@ -78,5 +80,5 @@ def unpack_exception(error, wrap_errors):
         # Stub exception
         from celery_rpc.exceptions import RemoteException
         error = RemoteException(error.args)
-    error = error.unpack_exception()
+    error = error.unpack_exception(serializer)
     return error
