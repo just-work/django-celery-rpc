@@ -11,7 +11,7 @@ except ImportError:
 FILTER_LIMIT = 1000
 
 # Default timeout for getting results
-GET_RESULT_TIMEOUT = 1000
+GET_RESULT_TIMEOUT = 10
 
 # Pass exceptions from server to client as instances if true.
 # By default exceptions are passed as a string.
