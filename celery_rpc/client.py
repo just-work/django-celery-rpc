@@ -4,6 +4,7 @@ import os
 from celery.exceptions import TimeoutError
 
 from . import utils
+from kombu.serialization import registry
 from .config import GET_RESULT_TIMEOUT
 from .exceptions import RestFrameworkError, remote_exception_registry
 
@@ -279,7 +280,8 @@ class Client(object):
 
     def _unpack_exception(self, error):
         wrap_errors = self._app.conf['WRAP_REMOTE_ERRORS']
-        return utils.unpack_exception(error, wrap_errors)
+        serializer = self._app.conf['CELERY_RESULT_SERIALIZER']
+        return utils.unpack_exception(error, wrap_errors, serializer=serializer)
 
     def pipe(self):
         """ Create pipeline for RPC request
