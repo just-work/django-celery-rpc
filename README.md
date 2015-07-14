@@ -101,7 +101,7 @@ You can find more examples in tests.
 Simple filtering example
 
 ```
-span_client.filter('app.models:MyModel', kwargs=dict(filter={'a__exact':'a'}))
+span_client.filter('app.models:MyModel', kwargs=dict(filters={'a__exact':'a'}))
 ```
 
 Filtering with Q object
