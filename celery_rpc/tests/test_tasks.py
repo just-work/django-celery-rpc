@@ -3,13 +3,14 @@ from random import randint
 from uuid import uuid4
 
 from autofixture import AutoFixture
+from django.core.exceptions import ObjectDoesNotExist
 from celery_rpc.tests.utils import (get_model_dict, SimpleModelTestMixin,
                                     get_model_dict_from_list, unpack_exception)
 from django.test import TestCase
 from django.db.models import Q
 from rest_framework import serializers
 from .. import tasks
-from ..exceptions import ModelTaskError
+from ..exceptions import ModelTaskError, remote_exception_registry
 from ..tests.tasks import CustomModelTask
 from .models import SimpleModel, NonAutoPrimaryKeyModel, PartialUpdateModel
 
@@ -135,21 +136,24 @@ class SingleObjectsDoesNotExistMixin(object):
     """ Checks behavior of tasks, which modify existing objects.
     """
 
-    def testSingleObjectDoesNotExist(self):
-        """ Raise exception if cannot find object in single mode  """
-        with self.assertRaisesRegexp(ModelTaskError,
+    def checkSingleObjectDoesNotExist(self, expected_exc=ObjectDoesNotExist):
+        with self.assertRaisesRegexp(expected_exc,
                                      r'matching query does not exist.'):
             with unpack_exception():
                 self.task.delay(self.MODEL_SYMBOL,
                                 {'char': str(uuid4()),
                                  'id': randint(100, 1000)}).get()
 
+    def testSingleObjectDoesNotExist(self):
+        """ Raise exception if cannot find object in single mode  """
+        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = False
+        return self.checkSingleObjectDoesNotExist()
+
     def testSingleObjectDoesNotExistRemoteError(self):
         """ Perform testSingleObjectDoesNotExist with remote errors handling
-        in another mode."""
-        old = tasks.rpc.conf['WRAP_REMOTE_ERRORS']
-        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = not old
-        return self.testSingleObjectDoesNotExist()
+        enabled."""
+        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = True
+        return self.checkSingleObjectDoesNotExist(remote_exception_registry.RemoteError)
 
 
 class UpdateTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
@@ -206,7 +210,7 @@ class UpdateTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
         char_val = str(uuid4())
         expected = get_model_dict(self.models[0])
 
-        with self.assertRaises(ModelTaskError):
+        with self.assertRaises(ImportError):
             with unpack_exception():
                 self.task.delay(self.MODEL_SYMBOL,
                                 {'char': char_val, 'id': expected['id']},
@@ -224,7 +228,7 @@ class UpdateTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
         char_val = str(uuid4())
         expected = get_model_dict(self.models[0])
 
-        with self.assertRaisesRegexp(ModelTaskError, r'not a DRF serializer'):
+        with self.assertRaisesRegexp(TypeError, r'not a DRF serializer'):
             serializer_cls = 'celery_rpc.tests.models:SimpleModel'
             with unpack_exception():
                 self.task.delay(self.MODEL_SYMBOL,
@@ -303,7 +307,7 @@ class CreateTaskTests(BaseTaskTests):
         self.assertEquals(expected, [{'char': i['char']} for i in r.get()])
         self.assertEquals(2, SimpleModel.objects.filter(char__in=uuids).count())
 
-    def testSingleObjectDoesNotExist(self):
+    def checkSingleObjectDoesNotExist(self, *args):
         """ Creates new object if provided ID does not exist """
         expected = str(uuid4())
         self.assertEquals(0, SimpleModel.objects.filter(char=expected).count())

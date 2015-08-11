@@ -46,13 +46,7 @@ class ModelTask(Task):
         with remote_error(self):
             self.request.model = self._import_model(model)
             args = [model] + list(args)
-            try:
-                return self.run(*args, **kwargs)
-            except ModelTaskError:
-                raise
-            except Exception as e:
-                raise ModelTaskError('Unhandled model error',
-                                     str(type(e)), str(e))
+            return self.run(*args, **kwargs)
 
     @staticmethod
     def _import_model(model_name):

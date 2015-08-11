@@ -72,8 +72,6 @@ def unpack_exception(error, wrap_errors, serializer=DEFAULT_EXC_SERIALIZER):
     """
     if not wrap_errors:
         return None
-    if isinstance(error, UnpickleableExceptionWrapper):
-        error = error.restore()
     if not error.__class__.__name__ == 'RemoteException':
         return None
     if not hasattr(error, 'unpack_exception'):

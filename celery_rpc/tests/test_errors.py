@@ -91,7 +91,7 @@ class ErrorTunnelServerTestCase(RemoteErrorsTestMixin, TestCase):
 
         with mock.patch(patch, side_effect=error):
             r = task.apply(args=args, kwargs=kwargs)
-        remote_exception_stub = r.get(propagate=False).restore()
+        remote_exception_stub = r.get(propagate=False)
         expected = exceptions.RemoteException(error, serializer=self.serializer)
         self.assertEqual(remote_exception_stub.__class__.__name__,
                          exceptions.RemoteException.__name__)
@@ -183,14 +183,12 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
                 with self.assertRaises(self.rpc_client.ResponseError) as ctx:
                     method(*args)
         response = ctx.exception
-        wrapper = response.args[1]
-        self.assertIsInstance(wrapper, UnpickleableExceptionWrapper)
+        remote_error = response.args[1]
         # checking that wrapped exception is passed to unpacking helper
         # and that unpack flag is False.
 
-        unpack_mock.assert_called_with(wrapper, False,
+        unpack_mock.assert_called_with(remote_error, False,
                                        serializer=self.serializer)
-        remote_error = wrapper.restore()
         remote_error_cls = remote_error.__class__
         self.assertEqual(remote_error_cls.__name__, "RemoteException")
         self.assertEqual(remote_error_cls.__module__, "celery_rpc.exceptions")

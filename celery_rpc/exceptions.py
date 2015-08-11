@@ -35,6 +35,8 @@ class RemoteException(Exception):
             args = [dumps(args, serializer=serializer)[2]]
         elif isinstance(exc, (list, tuple)):
             args = exc
+        elif isinstance(exc, basestring):
+            args = [exc]
         else:
             raise ValueError("Need a BaseException object")
         super(RemoteException, self).__init__(*args)

@@ -6,6 +6,7 @@ from autofixture import AutoFixture
 
 from django.test import TransactionTestCase
 
+from celery_rpc.exceptions import remote_exception_registry
 from ..client import Pipe, Client
 from .utils import SimpleModelTestMixin, unpack_exception
 from .models import SimpleModel, FkSimpleModel
@@ -84,6 +85,17 @@ class PipelineTests(BasePipelineTests):
         old = self.client._app.conf['WRAP_REMOTE_ERRORS']
         self.client._app.conf['WRAP_REMOTE_ERRORS'] = not old
         return self.testAtomicPipeline()
+
+    def testWrapRemoteErrors(self):
+        """ Errors wrap correctly
+        """
+        self.client._app.conf['WRAP_REMOTE_ERRORS'] = True
+
+        p = self.pipe
+        p = p.delete(self.MODEL_SYMBOL, self.get_model_dict(self.models[0]))
+        p = p.delete('invalid model symbol raise exception', {})
+        with self.assertRaisesRegexp(remote_exception_registry.ImportError, "No module named"):
+            p.run(propagate=False)
 
     @expectedFailure
     def testPatchTransformer(self):
