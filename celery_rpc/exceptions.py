@@ -1,6 +1,6 @@
 # coding: utf-8
+import six
 from celery.backends.base import create_exception_cls
-
 from kombu.exceptions import ContentDisallowed
 from kombu.serialization import dumps, loads, registry
 from kombu.utils.encoding import from_utf8
@@ -35,6 +35,8 @@ class RemoteException(Exception):
             args = [dumps(args, serializer=serializer)[2]]
         elif isinstance(exc, (list, tuple)):
             args = exc
+        elif isinstance(exc, six.string_types):
+            args = [exc]
         else:
             raise ValueError("Need a BaseException object")
         super(RemoteException, self).__init__(*args)

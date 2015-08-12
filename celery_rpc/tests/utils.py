@@ -42,6 +42,9 @@ class unpack_exception(object):
         pass
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if not exc_val:
+            return
+
         if hasattr(exc_val, 'restore'):
             exc_val = exc_val.restore()
         inner = utils.unpack_exception(exc_val, True)
