@@ -18,6 +18,7 @@ class HighPriorityRequestTests(TestCase):
     def setUpClass(cls):
         """ Creates rpc-client object
         """
+        super(HighPriorityRequestTests, cls).setUpClass()
         cls.rpc_client = Client()
         cls.task_name = utils.FILTER_TASK_NAME
 
@@ -93,6 +94,7 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
     def setUpClass(cls):
         """ Creates rpc-client object
         """
+        super(AlterIdentityTests, cls).setUpClass()
         cls.rpc_client = Client()
 
     def setUp(self):

@@ -124,6 +124,7 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
     def setUpClass(cls):
         """ Creates rpc-client object
         """
+        super(ErrorTunnelClientTestCase, cls).setUpClass()
         cls.rpc_client = Client()
 
     def setUp(self):
@@ -201,6 +202,7 @@ class ErrorRegistryTestCase(TestCase):
     def setUpClass(cls):
         """ Creates rpc-client object
         """
+        super(ErrorRegistryTestCase, cls).setUpClass()
         cls.rpc_client = Client()
 
     def setUp(self):
