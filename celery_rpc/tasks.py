@@ -3,7 +3,6 @@ from __future__ import absolute_import
 from django.db import router
 from django.db.models import Q
 import six
-from rest_framework import VERSION as DRFVER
 
 from . import config, utils
 from .app import rpc
@@ -84,30 +83,27 @@ def getset(self, model, data, fields=None, nocache=False,
     :return: serialized model data or list of one or errors
 
     """
+    from celery_rpc.base import DRF3
     db_for_write = router.db_for_write(self.model)
     with atomic_commit_on_success(using=db_for_write):
         instance, many = self.get_instance(data, using=db_for_write)
-        if DRFVER >= '3.0.0':
+        if DRF3:
             kwargs = {}
         else:
             kwargs = {'allow_add_remove': False}
         s = self.serializer_class(instance=instance, data=data,
                                            many=many, partial=True, **kwargs)
-        if DRFVER < '3.0.0':
+        if not DRF3:
+            # In DRF 2.3-2.4 serializer.is_valid() changes serializer.data
             old_values = s.data
         elif s.is_valid():
+            # In DRF 3.0+ you must call is_valid() before accessing data
             old_values = s.data
+            # In DRF 3.3+ you cant call save() after accessing data, so we need
+            # to spoof check in save()
             del s._data
         else:
-            raise RuntimeError()
-        # if getattr(serializer, 'many', False):
-        #     old_values = [dict(to_native(o)) for o in obj]
-        # else:
-        #     old_values = dict(to_native(obj))
-        # elif serializer.is_valid():
-        #     old_values = serializer.data
-        # else:
-        #     raise RuntimeError("serializer.is_valid() is False for old values")
+            raise RestFrameworkError('Serializer errors happened', s.errors)
 
         if s.is_valid():
             s.save(force_update=True)
@@ -116,8 +112,7 @@ def getset(self, model, data, fields=None, nocache=False,
             else:
                 return old_values
         else:
-            raise RestFrameworkError('Serializer errors happened',
-                                     s.errors)
+            raise RestFrameworkError('Serializer errors happened', s.errors)
 
 
 @rpc.task(name=utils.UPDATE_OR_CREATE_TASK_NAME, bind=True,

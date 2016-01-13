@@ -1,15 +1,15 @@
 # coding: utf-8
 from autofixture import AutoFixture
 from django.core.exceptions import ValidationError
-from rest_framework import VERSION as DRFVER
 from rest_framework import serializers
 from celery_rpc.tests.models import SimpleModel
 from celery_rpc import utils
+from celery_rpc.base import DRF3
 
 def get_model_dict(model):
     result = model.__dict__.copy()
     del result['_state']
-    if DRFVER < '3.0.0':
+    if not DRF3:
         return result
     model_class = model._meta.model
     class Serializer(serializers.ModelSerializer):

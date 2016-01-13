@@ -6,11 +6,14 @@ from celery import Task
 from django.db.models import Model
 from django.db import transaction
 from rest_framework import serializers
-from rest_framework import VERSION as DRFVER
+from rest_framework import VERSION
 
 from . import config
 from .utils import symbol_by_name, unproxy
 from .exceptions import ModelTaskError, RestFrameworkError, RemoteException
+
+
+DRF3 = VERSION >= '3.0.0'
 
 
 class remote_error(object):
@@ -97,7 +100,7 @@ class ModelTask(Task):
 
         identity_field = self.identity_field
 
-        if DRFVER >= '3.0.0':
+        if DRF3:
             class GenericListSerializerClass(serializers.ListSerializer):
                 def update(self, instance, validated_data):
                     if not validated_data:
@@ -120,7 +123,7 @@ class ModelTask(Task):
         class GenericModelSerializer(base_serializer_class):
             class Meta(getattr(base_serializer_class, 'Meta', object)):
                 model = model_class
-                if DRFVER >= '3.0.0':
+                if DRF3:
                     list_serializer_class = GenericListSerializerClass
 
 
@@ -130,7 +133,7 @@ class ModelTask(Task):
                 except AttributeError:
                     return None
 
-            if DRFVER >= '3.0.0':
+            if DRF3:
                 # Django-Rest-Framework doesn't allow implicit creation of
                 # nested models, so we need to override create() to handle this
                 def create(self, validated_data):
@@ -207,7 +210,7 @@ class ModelChangeTask(ModelTask):
         :return: serialized model data or list of one or errors
 
         """
-        if DRFVER >= "3.0.0":
+        if DRF3:
             kwargs = {}
         else:
             kwargs = {'allow_add_remove': allow_add_remove}
@@ -215,7 +218,7 @@ class ModelChangeTask(ModelTask):
                                   partial=partial, **kwargs)
 
         if s.is_valid():
-            if DRFVER < '3.0.0':
+            if not DRF3:
                 s.save(force_insert=force_insert,
                        force_update=force_update)
             elif force_insert:

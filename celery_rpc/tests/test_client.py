@@ -5,9 +5,10 @@ import mock
 from django.test import TestCase
 from rest_framework import serializers
 
+from celery_rpc.base import DRF3
 from .. import config, utils
 from ..client import Client
-from .utils import SimpleModelTestMixin, DRFVER
+from .utils import SimpleModelTestMixin
 
 
 class HighPriorityRequestTests(TestCase):
@@ -92,7 +93,6 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
     def setUpClass(cls):
         """ Creates rpc-client object
         """
-        __import__('celery_rpc.tasks')
         cls.rpc_client = Client()
 
     def setUp(self):
@@ -104,7 +104,8 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
         """ Update with alter identity field looks good.
         """
         r = self.rpc_client.update(self.MODEL_SYMBOL, self.data, self.kwargs)
-        if DRFVER >= "3.0.0":
+        # FIXME: contract change
+        if DRF3:
             dt = serializers.DateTimeField().to_representation(datetime.max)
         else:
             dt = datetime.max
