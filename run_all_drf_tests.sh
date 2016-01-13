@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-
-for REQ in $DRFV;
+for VER in $DRFV;
 do
-  pip install "djangorestframework$REQ" --use-mirrors -U
+  TOP=`echo "$VER + 0.1" | bc`
+  pip install "djangorestframework>=$VER,<$TOP" --use-mirrors -U
   python setup.py test
 done
