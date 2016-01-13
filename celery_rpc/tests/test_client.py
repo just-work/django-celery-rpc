@@ -3,6 +3,7 @@ from datetime import datetime
 import mock
 
 from django.test import TestCase
+from rest_framework import serializers
 
 from .. import config, utils
 from ..client import Client
@@ -91,6 +92,7 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
     def setUpClass(cls):
         """ Creates rpc-client object
         """
+        __import__('celery_rpc.tasks')
         cls.rpc_client = Client()
 
     def setUp(self):
@@ -102,7 +104,8 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
         """ Update with alter identity field looks good.
         """
         r = self.rpc_client.update(self.MODEL_SYMBOL, self.data, self.kwargs)
-        self.assertEqual(datetime.max, r['datetime'])
+        dt = serializers.DateTimeField().to_representation(datetime.max)
+        self.assertEqual(dt, r['datetime'])
         self.assertEqual(datetime.max,
                          self.MODEL.objects.get(pk=self.models[0].pk).datetime)
 

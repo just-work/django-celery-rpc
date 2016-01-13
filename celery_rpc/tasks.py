@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from django.db import router
 from django.db.models import Q
 import six
+from rest_framework import VERSION as DRFVER
 
 from . import config, utils
 from .app import rpc
@@ -86,18 +87,36 @@ def getset(self, model, data, fields=None, nocache=False,
     db_for_write = router.db_for_write(self.model)
     with atomic_commit_on_success(using=db_for_write):
         instance, many = self.get_instance(data, using=db_for_write)
-        serializer = self.serializer_class(instance=instance, data=data,
-                                           many=many, allow_add_remove=False,
-                                           partial=True)
+        if DRFVER >= '3.0.0':
+            kwargs = {}
+        else:
+            kwargs = {'allow_add_remove': False}
+        s = self.serializer_class(instance=instance, data=data,
+                                           many=many, partial=True, **kwargs)
+        if DRFVER < '3.0.0':
+            old_values = s.data
+        elif s.is_valid():
+            old_values = s.data
+        else:
+            raise RuntimeError()
+        # if getattr(serializer, 'many', False):
+        #     old_values = [dict(to_native(o)) for o in obj]
+        # else:
+        #     old_values = dict(to_native(obj))
+        # elif serializer.is_valid():
+        #     old_values = serializer.data
+        # else:
+        #     raise RuntimeError("serializer.is_valid() is False for old values")
 
-        old_values = serializer.data
-
-        if not serializer.errors:
-            serializer.save(force_update=True)
-            return old_values
+        if s.is_valid():
+            s.save(force_update=True)
+            if many:
+                return old_values
+            else:
+                return old_values
         else:
             raise RestFrameworkError('Serializer errors happened',
-                                     serializer.errors)
+                                     s.errors)
 
 
 @rpc.task(name=utils.UPDATE_OR_CREATE_TASK_NAME, bind=True,

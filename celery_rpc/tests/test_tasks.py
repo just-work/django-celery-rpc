@@ -329,7 +329,7 @@ class CreateTaskTests(BaseTaskTests):
         obj = NonAutoPrimaryKeyModel.objects.create(pk=pk)
         with self.assertRaisesRegexp(
                 ModelTaskError,
-                r'primary key|PRIMARY KEY') as ctx:
+                r'primary key|PRIMARY KEY|This field must be unique') as ctx:
             with unpack_exception():
                 r = self.task.delay(
                     'celery_rpc.tests.models:NonAutoPrimaryKeyModel',

@@ -5,7 +5,8 @@ import django
 from celery import Task
 from django.db.models import Model
 from django.db import transaction
-from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers
+from rest_framework import VERSION as DRFVER
 
 from . import config
 from .utils import symbol_by_name
@@ -71,7 +72,7 @@ class ModelTask(Task):
         """ Import class by full name, check type and return.
         """
         sym = symbol_by_name(serializer_name)
-        if inspect.isclass(sym) and issubclass(sym, ModelSerializer):
+        if inspect.isclass(sym) and issubclass(sym, serializers.ModelSerializer):
             return sym
         raise TypeError(
             "Symbol '{}' is not a DRF serializer".format(serializer_name))
@@ -87,7 +88,7 @@ class ModelTask(Task):
         """
 
         # default serializer
-        base_serializer_class = ModelSerializer
+        base_serializer_class = serializers.ModelSerializer
 
         # custom serializer
         custom_serializer = self.request.kwargs.get('serializer_cls')
@@ -96,15 +97,44 @@ class ModelTask(Task):
 
         identity_field = self.identity_field
 
+        if DRFVER >= '3.0.0':
+            class GenericListSerializerClass(serializers.ListSerializer):
+                def update(self, instance, validated_data):
+                    if not validated_data:
+                        for obj in instance:
+                            obj.delete()
+                        return self.create(validated_data)
+                    if len(instance) == len(validated_data):
+                        for obj, values in zip(instance, validated_data):
+                            for k, v in values.items():
+                                setattr(obj, k, v)
+                                obj.save()
+                    elif len(instance) == 0:
+                        return self.create(validated_data)
+                    else:
+                        raise RuntimeError("instance and data len differs, "
+                                           "dont know what to do")
+                    return instance
+
+
         class GenericModelSerializer(base_serializer_class):
-            class Meta(base_serializer_class.Meta):
+            class Meta(getattr(base_serializer_class, 'Meta', object)):
                 model = model_class
+                if DRFVER >= '3.0.0':
+                    list_serializer_class = GenericListSerializerClass
+
 
             def get_identity(self, data):
                 try:
                     return data.get(identity_field, data.get('pk', None))
                 except AttributeError:
                     return None
+
+            if DRFVER >= '3.0.0':
+                # Django-Rest-Framework doesn't allow implicit creation of
+                # nested models, so we need to override create() to handle this
+                def create(self, validated_data):
+                    return super(GenericModelSerializer, self).create(validated_data)
 
         fields = self.request.kwargs.get("fields")
         if fields:
@@ -177,18 +207,27 @@ class ModelChangeTask(ModelTask):
         :return: serialized model data or list of one or errors
 
         """
-        serializer = self.serializer_class(instance=instance, data=data,
-                                           many=many,
-                                           allow_add_remove=allow_add_remove,
-                                           partial=partial)
+        if DRFVER >= "3.0.0":
+            kwargs = {}
+        else:
+            kwargs = {'allow_add_remove': allow_add_remove}
+        s = self.serializer_class(instance=instance, data=data, many=many,
+                                  partial=partial, **kwargs)
 
-        if serializer.is_valid():
-            serializer.save(force_insert=force_insert,
-                            force_update=force_update)
-            return serializer.data
+        if s.is_valid():
+            if DRFVER < '3.0.0':
+                s.save(force_insert=force_insert,
+                       force_update=force_update)
+            elif force_insert:
+                s.instance = s.create(s.validated_data)
+            elif force_update:
+                s.update(s.instance, s.validated_data)
+            else:
+                s.save()
+            return s.data
         else:
             raise RestFrameworkError('Serializer errors happened',
-                                     serializer.errors)
+                                     s.errors)
 
 
 class FunctionTask(Task):
