@@ -97,6 +97,7 @@ def getset(self, model, data, fields=None, nocache=False,
             old_values = s.data
         elif s.is_valid():
             old_values = s.data
+            del s._data
         else:
             raise RuntimeError()
         # if getattr(serializer, 'many', False):

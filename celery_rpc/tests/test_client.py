@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from .. import config, utils
 from ..client import Client
-from .utils import SimpleModelTestMixin
+from .utils import SimpleModelTestMixin, DRFVER
 
 
 class HighPriorityRequestTests(TestCase):
@@ -104,7 +104,10 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
         """ Update with alter identity field looks good.
         """
         r = self.rpc_client.update(self.MODEL_SYMBOL, self.data, self.kwargs)
-        dt = serializers.DateTimeField().to_representation(datetime.max)
+        if DRFVER >= "3.0.0":
+            dt = serializers.DateTimeField().to_representation(datetime.max)
+        else:
+            dt = datetime.max
         self.assertEqual(dt, r['datetime'])
         self.assertEqual(datetime.max,
                          self.MODEL.objects.get(pk=self.models[0].pk).datetime)

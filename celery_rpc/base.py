@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework import VERSION as DRFVER
 
 from . import config
-from .utils import symbol_by_name
+from .utils import symbol_by_name, unproxy
 from .exceptions import ModelTaskError, RestFrameworkError, RemoteException
 
 
@@ -226,8 +226,9 @@ class ModelChangeTask(ModelTask):
                 s.save()
             return s.data
         else:
-            raise RestFrameworkError('Serializer errors happened',
-                                     s.errors)
+            # force ugettext_lazy to unproxy
+            errors = unproxy(s.errors)
+            raise RestFrameworkError('Serializer errors happened', errors)
 
 
 class FunctionTask(Task):

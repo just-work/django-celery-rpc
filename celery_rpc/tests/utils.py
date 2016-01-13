@@ -9,7 +9,8 @@ from celery_rpc import utils
 def get_model_dict(model):
     result = model.__dict__.copy()
     del result['_state']
-    # return result
+    if DRFVER < '3.0.0':
+        return result
     model_class = model._meta.model
     class Serializer(serializers.ModelSerializer):
         class Meta:
