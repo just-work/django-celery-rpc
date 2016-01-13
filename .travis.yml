@@ -23,5 +23,4 @@ install:
   - pip install Django==$DJANGO --use-mirrors
   - pip install -e . --use-mirrors
 
-script:
-  - sh run_all_drf_tests.sh
+script: sh run_all_drf_tests.sh
