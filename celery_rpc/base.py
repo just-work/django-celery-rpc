@@ -38,6 +38,35 @@ class remote_error(object):
             serializer = self.task.app.conf['CELERY_RESULT_SERIALIZER']
             raise RemoteException(exc_val, serializer)
 
+if DRF3:
+    class GenericListSerializerClass(serializers.ListSerializer):
+
+        def update(self, instance, validated_data):
+            """ Performs bulk delete or update or create.
+
+            * instances are deleted if new data is empty
+            * if lengths of instances and new date are equal,
+              performs item-by-item update
+            * performs bulk creation is no instances passed
+
+            :returns new values
+            """
+            if not validated_data:
+                for obj in instance:
+                    obj.delete()
+                return self.create(validated_data)
+            if len(instance) == len(validated_data):
+                for obj, values in zip(instance, validated_data):
+                    for k, v in values.items():
+                        setattr(obj, k, v)
+                        obj.save()
+            elif len(instance) == 0:
+                return self.create(validated_data)
+            else:
+                raise RuntimeError("instance and data len differs, "
+                                   "don't know what to do")
+            return instance
+
 
 class ModelTask(Task):
     """ Base task for operating with django models.
@@ -100,44 +129,20 @@ class ModelTask(Task):
 
         identity_field = self.identity_field
 
-        if DRF3:
-            class GenericListSerializerClass(serializers.ListSerializer):
-                def update(self, instance, validated_data):
-                    if not validated_data:
-                        for obj in instance:
-                            obj.delete()
-                        return self.create(validated_data)
-                    if len(instance) == len(validated_data):
-                        for obj, values in zip(instance, validated_data):
-                            for k, v in values.items():
-                                setattr(obj, k, v)
-                                obj.save()
-                    elif len(instance) == 0:
-                        return self.create(validated_data)
-                    else:
-                        raise RuntimeError("instance and data len differs, "
-                                           "dont know what to do")
-                    return instance
-
-
         class GenericModelSerializer(base_serializer_class):
+
             class Meta(getattr(base_serializer_class, 'Meta', object)):
                 model = model_class
-                if DRF3:
-                    list_serializer_class = GenericListSerializerClass
 
+                if DRF3:
+                    # connect overriden list serializer to child serializer
+                    list_serializer_class = GenericListSerializerClass
 
             def get_identity(self, data):
                 try:
                     return data.get(identity_field, data.get('pk', None))
                 except AttributeError:
                     return None
-
-            if DRF3:
-                # Django-Rest-Framework doesn't allow implicit creation of
-                # nested models, so we need to override create() to handle this
-                def create(self, validated_data):
-                    return super(GenericModelSerializer, self).create(validated_data)
 
         fields = self.request.kwargs.get("fields")
         if fields:
@@ -210,10 +215,7 @@ class ModelChangeTask(ModelTask):
         :return: serialized model data or list of one or errors
 
         """
-        if DRF3:
-            kwargs = {}
-        else:
-            kwargs = {'allow_add_remove': allow_add_remove}
+        kwargs = {'allow_add_remove': allow_add_remove} if not DRF3 else {}
         s = self.serializer_class(instance=instance, data=data, many=many,
                                   partial=partial, **kwargs)
 

@@ -6,9 +6,11 @@ from celery_rpc.tests.models import SimpleModel
 from celery_rpc import utils
 from celery_rpc.base import DRF3
 
+
 def get_model_dict(model):
     result = model.__dict__.copy()
     del result['_state']
+    # FIXME: contract change
     if not DRF3:
         return result
     model_class = model._meta.model

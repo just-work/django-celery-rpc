@@ -4,6 +4,7 @@ from django.db import router
 from django.db.models import Q
 import six
 
+from celery_rpc.utils import unproxy
 from . import config, utils
 from .app import rpc
 from .base import get_base_task_class, atomic_commit_on_success
@@ -103,7 +104,8 @@ def getset(self, model, data, fields=None, nocache=False,
             # to spoof check in save()
             del s._data
         else:
-            raise RestFrameworkError('Serializer errors happened', s.errors)
+            errors = unproxy(s.errors)
+            raise RestFrameworkError('Serializer errors happened', errors)
 
         if s.is_valid():
             s.save(force_update=True)
@@ -112,7 +114,8 @@ def getset(self, model, data, fields=None, nocache=False,
             else:
                 return old_values
         else:
-            raise RestFrameworkError('Serializer errors happened', s.errors)
+            errors = unproxy(s.errors)
+            raise RestFrameworkError('Serializer errors happened', errors)
 
 
 @rpc.task(name=utils.UPDATE_OR_CREATE_TASK_NAME, bind=True,

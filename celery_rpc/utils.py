@@ -82,6 +82,8 @@ def unpack_exception(error, wrap_errors, serializer=DEFAULT_EXC_SERIALIZER):
 
 
 def unproxy(errors):
+    """ removes ugettext_lazy proxy from ValidationError structure to allow
+    errors to be serialized with JSON encoder."""
     for k, v in errors.items():
         unproxied = []
         for i in v:
