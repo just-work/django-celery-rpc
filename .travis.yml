@@ -4,4 +4,4 @@ install:
   - pip install detox
   - pip install -e .
 
-script: tox
+script: detox
