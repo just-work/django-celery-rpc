@@ -2,6 +2,7 @@ import datetime
 import decimal
 import json
 import re
+import uuid
 
 import six
 import jsonpickle
@@ -49,6 +50,8 @@ class RpcJsonEncoder(json.JSONEncoder):
             return str(o.total_seconds())
         elif isinstance(o, decimal.Decimal):
             return str(o)
+        elif isinstance(o, uuid.UUID):
+            return o.hex
         elif hasattr(o, 'tolist'):
             return o.tolist()
         elif hasattr(o, '__iter__'):
