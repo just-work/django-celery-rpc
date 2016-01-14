@@ -106,7 +106,6 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
         """ Update with alter identity field looks good.
         """
         r = self.rpc_client.update(self.MODEL_SYMBOL, self.data, self.kwargs)
-        # FIXME: contract change
         if DRF3:
             dt = serializers.DateTimeField().to_representation(datetime.max)
         else:
