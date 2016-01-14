@@ -1,4 +1,5 @@
 *.log
 *.pot
 *.pyc
+.tox
 local_settings.py
