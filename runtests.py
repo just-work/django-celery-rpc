@@ -36,7 +36,9 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option('--verbosity', dest='verbosity', action='store',
                       default=1, type=int)
-    parser.add_options(NoseTestSuiteRunner.options)
+    opts = getattr(NoseTestSuiteRunner, 'options', None)
+    if opts:
+        parser.add_options(opts)
     (options, args) = parser.parse_args()
 
     runtests(*args, **options.__dict__)

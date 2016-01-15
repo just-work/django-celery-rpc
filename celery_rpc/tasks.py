@@ -4,6 +4,7 @@ from django.db import router
 from django.db.models import Q
 import six
 
+from celery_rpc.utils import unproxy
 from . import config, utils
 from .app import rpc
 from .base import get_base_task_class, atomic_commit_on_success
@@ -83,21 +84,38 @@ def getset(self, model, data, fields=None, nocache=False,
     :return: serialized model data or list of one or errors
 
     """
+    from celery_rpc.base import DRF3
     db_for_write = router.db_for_write(self.model)
     with atomic_commit_on_success(using=db_for_write):
         instance, many = self.get_instance(data, using=db_for_write)
-        serializer = self.serializer_class(instance=instance, data=data,
-                                           many=many, allow_add_remove=False,
-                                           partial=True)
-
-        old_values = serializer.data
-
-        if not serializer.errors:
-            serializer.save(force_update=True)
-            return old_values
+        if DRF3:
+            kwargs = {}
         else:
-            raise RestFrameworkError('Serializer errors happened',
-                                     serializer.errors)
+            kwargs = {'allow_add_remove': False}
+        s = self.serializer_class(instance=instance, data=data,
+                                           many=many, partial=True, **kwargs)
+        if not DRF3:
+            # In DRF 2.3-2.4 serializer.is_valid() changes serializer.data
+            old_values = s.data
+        elif s.is_valid():
+            # In DRF 3.0+ you must call is_valid() before accessing data
+            old_values = s.data
+            # In DRF 3.3+ you cant call save() after accessing data, so we need
+            # to spoof check in save()
+            del s._data
+        else:
+            errors = unproxy(s.errors)
+            raise RestFrameworkError('Serializer errors happened', errors)
+
+        if s.is_valid():
+            s.save(force_update=True)
+            if many:
+                return old_values
+            else:
+                return old_values
+        else:
+            errors = unproxy(s.errors)
+            raise RestFrameworkError('Serializer errors happened', errors)
 
 
 @rpc.task(name=utils.UPDATE_OR_CREATE_TASK_NAME, bind=True,

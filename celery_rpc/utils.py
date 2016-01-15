@@ -1,10 +1,9 @@
 # coding: utf-8
 
-from six.moves import reduce
-from celery.utils.serialization import UnpickleableExceptionWrapper
-
-from kombu import Queue, utils
+import six
 from celery import Celery
+from kombu import Queue, utils
+from six.moves import reduce
 
 
 def create_celery_app(config=None, **opts):
@@ -80,3 +79,14 @@ def unpack_exception(error, wrap_errors, serializer=DEFAULT_EXC_SERIALIZER):
         error = RemoteException(error.args)
     error = error.unpack_exception(serializer)
     return error
+
+
+def unproxy(errors):
+    """ removes ugettext_lazy proxy from ValidationError structure to allow
+    errors to be serialized with JSON encoder."""
+    for k, v in errors.items():
+        unproxied = []
+        for i in v:
+            unproxied.append(six.text_type(i))
+        errors[k] = unproxied
+    return errors

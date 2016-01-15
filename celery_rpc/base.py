@@ -5,11 +5,15 @@ import django
 from celery import Task
 from django.db.models import Model
 from django.db import transaction
-from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers
+from rest_framework import VERSION
 
 from . import config
-from .utils import symbol_by_name
+from .utils import symbol_by_name, unproxy
 from .exceptions import ModelTaskError, RestFrameworkError, RemoteException
+
+
+DRF3 = VERSION >= '3.0.0'
 
 
 class remote_error(object):
@@ -33,6 +37,35 @@ class remote_error(object):
         if exc_val and self.task.app.conf['WRAP_REMOTE_ERRORS']:
             serializer = self.task.app.conf['CELERY_RESULT_SERIALIZER']
             raise RemoteException(exc_val, serializer)
+
+if DRF3:
+    class GenericListSerializerClass(serializers.ListSerializer):
+
+        def update(self, instance, validated_data):
+            """ Performs bulk delete or update or create.
+
+            * instances are deleted if new data is empty
+            * if lengths of instances and new date are equal,
+              performs item-by-item update
+            * performs bulk creation is no instances passed
+
+            :returns new values
+            """
+            if not validated_data:
+                for obj in instance:
+                    obj.delete()
+                return self.create(validated_data)
+            if len(instance) == len(validated_data):
+                for obj, values in zip(instance, validated_data):
+                    for k, v in values.items():
+                        setattr(obj, k, v)
+                        obj.save()
+            elif len(instance) == 0:
+                return self.create(validated_data)
+            else:
+                raise RuntimeError("instance and data len differs, "
+                                   "don't know what to do")
+            return instance
 
 
 class ModelTask(Task):
@@ -71,7 +104,7 @@ class ModelTask(Task):
         """ Import class by full name, check type and return.
         """
         sym = symbol_by_name(serializer_name)
-        if inspect.isclass(sym) and issubclass(sym, ModelSerializer):
+        if inspect.isclass(sym) and issubclass(sym, serializers.ModelSerializer):
             return sym
         raise TypeError(
             "Symbol '{}' is not a DRF serializer".format(serializer_name))
@@ -87,7 +120,7 @@ class ModelTask(Task):
         """
 
         # default serializer
-        base_serializer_class = ModelSerializer
+        base_serializer_class = serializers.ModelSerializer
 
         # custom serializer
         custom_serializer = self.request.kwargs.get('serializer_cls')
@@ -97,8 +130,13 @@ class ModelTask(Task):
         identity_field = self.identity_field
 
         class GenericModelSerializer(base_serializer_class):
-            class Meta(base_serializer_class.Meta):
+
+            class Meta(getattr(base_serializer_class, 'Meta', object)):
                 model = model_class
+
+                if DRF3:
+                    # connect overriden list serializer to child serializer
+                    list_serializer_class = GenericListSerializerClass
 
             def get_identity(self, data):
                 try:
@@ -177,18 +215,25 @@ class ModelChangeTask(ModelTask):
         :return: serialized model data or list of one or errors
 
         """
-        serializer = self.serializer_class(instance=instance, data=data,
-                                           many=many,
-                                           allow_add_remove=allow_add_remove,
-                                           partial=partial)
+        kwargs = {'allow_add_remove': allow_add_remove} if not DRF3 else {}
+        s = self.serializer_class(instance=instance, data=data, many=many,
+                                  partial=partial, **kwargs)
 
-        if serializer.is_valid():
-            serializer.save(force_insert=force_insert,
-                            force_update=force_update)
-            return serializer.data
+        if s.is_valid():
+            if not DRF3:
+                s.save(force_insert=force_insert,
+                       force_update=force_update)
+            elif force_insert:
+                s.instance = s.create(s.validated_data)
+            elif force_update:
+                s.update(s.instance, s.validated_data)
+            else:
+                s.save()
+            return s.data
         else:
-            raise RestFrameworkError('Serializer errors happened',
-                                     serializer.errors)
+            # force ugettext_lazy to unproxy
+            errors = unproxy(s.errors)
+            raise RestFrameworkError('Serializer errors happened', errors)
 
 
 class FunctionTask(Task):
