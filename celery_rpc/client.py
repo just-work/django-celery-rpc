@@ -1,10 +1,11 @@
 from __future__ import absolute_import
 import os
+import socket
 
 from celery.exceptions import TimeoutError
+from celery.utils import nodename
 
 from . import utils
-from kombu.serialization import registry
 from .config import GET_RESULT_TIMEOUT
 from .exceptions import RestFrameworkError, remote_exception_registry
 
@@ -54,6 +55,10 @@ class Client(object):
 
         self.errors = remote_exception_registry
 
+    def get_client_name(self):
+        return nodename(self._app.conf.get("RPC_CLIENT_NAME"),
+                        socket.gethostname())
+
     def prepare_task(self, task_name, args, kwargs, high_priority=False,
                      **options):
         """ Prepare subtask signature
@@ -69,6 +74,8 @@ class Client(object):
 
         """
         task = self._task_stubs[task_name]
+        options.setdefault("headers", {})
+        options["headers"]["referer"] = self.get_client_name()
         if high_priority:
             conf = task.app.conf
             options['routing_key'] = conf['CELERY_HIGH_PRIORITY_ROUTING_KEY']

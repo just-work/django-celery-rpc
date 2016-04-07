@@ -23,6 +23,9 @@ WRAP_REMOTE_ERRORS = False
 # Do it on your own risk!
 OVERRIDE_BASE_TASKS = {}
 
+# default celery rpc client name which will be passed as referer header
+RPC_CLIENT_NAME = "celery_rpc_client"
+
 # See Celery configuration parameters at
 # http://docs.celeryproject.org/en/latest/configuration.html
 # Some reasonable defaults are defined below

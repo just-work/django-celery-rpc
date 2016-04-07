@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+
+import socket
 from datetime import datetime
 import mock
 
@@ -120,3 +122,24 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
         r = self.rpc_client.delete(self.MODEL_SYMBOL, self.data, self.kwargs)
         self.assertIsNone(r)
         self.assertFalse(self.MODEL.objects.filter(pk=self.models[0].pk).exists())
+
+
+class SetRefererTests(SimpleModelTestMixin, TestCase):
+    """ Client set referer header when calling tasks
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """ Creates rpc-client object
+        """
+        super(SetRefererTests, cls).setUpClass()
+        cls.rpc_client = Client()
+        cls.task_name = utils.FILTER_TASK_NAME
+
+    def testSetRefererHeader(self):
+        """ Method `prepare_task` set referer header
+        """
+        signature = self.rpc_client.prepare_task(self.task_name, None, None)
+        self.assertEqual(
+            signature.options["headers"],
+            {"referer": "@".join([config.RPC_CLIENT_NAME, socket.gethostname()])})
