@@ -219,6 +219,8 @@ def pipe(self, pipeline):
     """
     result = []
     r = None
+    headers = self.headers
+    headers["piped"] = True
     with atomic_commit_on_success():
         for t in pipeline:
             task = self.app.tasks[t['name']]
@@ -230,8 +232,6 @@ def pipe(self, pipeline):
                     args.append(result)
                 else:
                     args.append(r)
-            headers = self.request.headers or {}
-            headers["piped"] = True
             r = task.apply(args=args, kwargs=t['kwargs'], headers=headers).get()
             result.append(r)
 

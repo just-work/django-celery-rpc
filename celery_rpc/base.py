@@ -74,6 +74,10 @@ class RpcTask(Task):
     """ Base celery rpc task class
     """
 
+    @property
+    def headers(self):
+        return self.request.headers or {}
+
     def __call__(self, *args, **kwargs):
         with remote_error(self):
             self.prepare_context(*args, **kwargs)
@@ -91,10 +95,10 @@ class ModelTask(RpcTask):
 
     def __call__(self, model, *args, **kwargs):
         logger.debug("Got task %s", self.name,
-                     extra={"referer": self.request.headers.get("referer"),
-                            "piped": self.request.headers.get("piped"),
+                     extra={"referer": self.headers.get("referer"),
+                            "piped": self.headers.get("piped"),
                             "model": model})
-        super(ModelTask, self).__call__(model, *args, **kwargs)
+        return super(ModelTask, self).__call__(model, *args, **kwargs)
 
     def prepare_context(self, model, *args, **kwargs):
         self.request.model = self._import_model(model)
@@ -261,10 +265,10 @@ class FunctionTask(RpcTask):
 
     def __call__(self, function, *args, **kwargs):
         logger.debug("Got task %s", self.name,
-                     extra={"referer": self.request.headers.get("referer"),
-                            "piped": self.request.headers.get("piped"),
+                     extra={"referer": self.headers.get("referer"),
+                            "piped": self.headers.get("piped"),
                             "function": function})
-        super(FunctionTask, self).__call__(function, *args, **kwargs)
+        return super(FunctionTask, self).__call__(function, *args, **kwargs)
 
     def prepare_context(self, function, *args, **kwargs):
         self.request.function = self._import_function(function)
@@ -286,10 +290,10 @@ class FunctionTask(RpcTask):
 class PipeTask(RpcTask):
     """ Base Task for pipe function.
     """
-    def __call__(self, function, *args, **kwargs):
+    def __call__(self, *args, **kwargs):
         logger.debug("Got task %s", self.name,
-                     extra={"referer": self.request.headers.get("referer")})
-        super(PipeTask, self).__call__(function, *args, **kwargs)
+                     extra={"referer": self.headers.get("referer")})
+        return super(PipeTask, self).__call__(*args, **kwargs)
 
 
 def get_base_task_class(base_task_name):
