@@ -207,7 +207,11 @@ def call(self, function, args, kwargs):
     return self.function(*args, **kwargs)
 
 
-@rpc.task(name=utils.PIPE_TASK_NAME, bind=True, shared=False)
+_base_pipe_task = get_base_task_class('PipeTask')
+
+
+@rpc.task(name=utils.PIPE_TASK_NAME, bind=True, base=_base_pipe_task,
+          shared=False)
 def pipe(self, pipeline):
     """ Handle pipeline and return results
     :param pipeline: List of pipelined requests.
@@ -215,6 +219,8 @@ def pipe(self, pipeline):
     """
     result = []
     r = None
+    headers = self.headers
+    headers["piped"] = True
     with atomic_commit_on_success():
         for t in pipeline:
             task = self.app.tasks[t['name']]
@@ -226,7 +232,7 @@ def pipe(self, pipeline):
                     args.append(result)
                 else:
                     args.append(r)
-            r = task.apply(args=args, kwargs=t['kwargs']).get()
+            r = task.apply(args=args, kwargs=t['kwargs'], headers=headers).get()
             result.append(r)
 
     return result

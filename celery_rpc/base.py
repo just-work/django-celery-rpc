@@ -1,5 +1,6 @@
 import inspect
 import six
+from logging import getLogger
 
 import django
 from celery import Task
@@ -10,8 +11,9 @@ from rest_framework import VERSION
 
 from . import config
 from .utils import symbol_by_name, unproxy
-from .exceptions import ModelTaskError, RestFrameworkError, RemoteException
+from .exceptions import RestFrameworkError, RemoteException
 
+logger = getLogger(__name__)
 
 DRF3 = VERSION >= '3.0.0'
 
@@ -68,18 +70,38 @@ if DRF3:
             return instance
 
 
-class ModelTask(Task):
+class RpcTask(Task):
+    """ Base celery rpc task class
+    """
+
+    @property
+    def headers(self):
+        return self.request.headers or {}
+
+    def __call__(self, *args, **kwargs):
+        with remote_error(self):
+            self.prepare_context(*args, **kwargs)
+            return self.run(*args, **kwargs)
+
+    def prepare_context(self, *args, **kwargs):
+        """ Prepare context for calling task function. Do nothing by default.
+        """
+
+
+class ModelTask(RpcTask):
     """ Base task for operating with django models.
     """
     abstract = True
 
     def __call__(self, model, *args, **kwargs):
-        """ Prepare context for calling task function.
-        """
-        with remote_error(self):
-            self.request.model = self._import_model(model)
-            args = [model] + list(args)
-            return self.run(*args, **kwargs)
+        logger.debug("Got task %s", self.name,
+                     extra={"referer": self.headers.get("referer"),
+                            "piped": self.headers.get("piped"),
+                            "model": model})
+        return super(ModelTask, self).__call__(model, *args, **kwargs)
+
+    def prepare_context(self, model, *args, **kwargs):
+        self.request.model = self._import_model(model)
 
     @staticmethod
     def _import_model(model_name):
@@ -236,18 +258,20 @@ class ModelChangeTask(ModelTask):
             raise RestFrameworkError('Serializer errors happened', errors)
 
 
-class FunctionTask(Task):
+class FunctionTask(RpcTask):
     """ Base task for calling function.
     """
     abstract = True
 
     def __call__(self, function, *args, **kwargs):
-        """ Prepare context for calling task function.
-        """
-        with remote_error(self):
-            self.request.function = self._import_function(function)
-            args = [function] + list(args)
-            return self.run(*args, **kwargs)
+        logger.debug("Got task %s", self.name,
+                     extra={"referer": self.headers.get("referer"),
+                            "piped": self.headers.get("piped"),
+                            "function": function})
+        return super(FunctionTask, self).__call__(function, *args, **kwargs)
+
+    def prepare_context(self, function, *args, **kwargs):
+        self.request.function = self._import_function(function)
 
     @staticmethod
     def _import_function(func_name):
@@ -261,6 +285,15 @@ class FunctionTask(Task):
     @property
     def function(self):
         return self.request.function
+
+
+class PipeTask(RpcTask):
+    """ Base Task for pipe function.
+    """
+    def __call__(self, *args, **kwargs):
+        logger.debug("Got task %s", self.name,
+                     extra={"referer": self.headers.get("referer")})
+        return super(PipeTask, self).__call__(*args, **kwargs)
 
 
 def get_base_task_class(base_task_name):
