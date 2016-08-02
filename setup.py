@@ -30,7 +30,7 @@ setup(
     ],
     tests_require=[
         'nose>=1.0',
-        'django >=1.3, <1.10',
+        'django >=1.3, <1.11',
         'djangorestframework >= 2.3, <3.4',
         'django-nose >= 1.2, <1.5',
         'django-autofixture>=0.3.2,<0.12.0',
