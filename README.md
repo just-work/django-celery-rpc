@@ -227,17 +227,17 @@ You need to create instance of MyModel and instance of MyAnotherModel which reff
 ```python
 p = span_client.pipe()
 p = p.create('apps.models:MyModel', data={"a": "a"})
-p = p.transform({"fk": "id"}, defaults={"b": "b"})
+p = p.translate({"fk": "id"}, defaults={"b": "b"})
 p = p.create('apps.models:MyAnotherModel')
 p.run()
 ```
 
-In this example the `transform` task: 
+In this example the `translate` task: 
  - take result of the previous `create` task
  - extract value of "id" field from it
  - add this value to "defaults" by key "fk"
  
-After that next `create` task takes result of `transform` as input data
+After that next `create` task takes result of `translate` as input data
 
 ### Add/delete m2m relations
 
