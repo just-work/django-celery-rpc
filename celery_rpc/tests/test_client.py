@@ -151,6 +151,7 @@ class TaskExpireTests(TestCase):
     """
     @classmethod
     def setUpClass(cls):
+        super(TaskExpireTests, cls).setUpClass()
         cls.rpc_client = Client()
         cls.test_expires = 123
         cls.method_names = ['call', 'create', 'delete', 'update', 'filter',
