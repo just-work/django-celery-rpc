@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import os
 import socket
 
-from celery.exceptions import TimeoutError, TaskRevokedError
+from celery.exceptions import TimeoutError
 from celery.utils import nodename
 
 from . import utils
