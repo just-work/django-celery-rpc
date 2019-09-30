@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import random
 import socket
 from datetime import datetime
 import mock
@@ -143,3 +144,41 @@ class SetRefererTests(SimpleModelTestMixin, TestCase):
         self.assertEqual(
             signature.options["headers"],
             {"referer": "@".join([config.RPC_CLIENT_NAME, socket.gethostname()])})
+
+
+class TaskExpireTests(TestCase):
+    """ Tests expiry time for tasks
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls.rpc_client = Client()
+        cls.test_expires = 123
+        cls.method_names = ['call', 'create', 'delete', 'update', 'filter',
+                            'getset', 'update_or_create']
+
+    def _assertExpires(self, method_name, expected_expires,  **kwargs):
+        method = getattr(self.rpc_client, method_name)
+        args = ['fake_model_or_function_name', {}]
+        mock_name = 'celery_rpc.tasks.{}.apply_async'.format(method_name)
+        kwargs.update(async=False)
+        with mock.patch(mock_name) as _apply_async:
+            method(*args, **kwargs)
+
+        expires = _apply_async.call_args[1].get('expires', None)
+        self.assertIsNotNone(expires)
+        self.assertEqual(expected_expires, expires)
+
+    def testExpiresDefault(self):
+        """ Client uses default value for task expiration if timeout is None
+        """
+        method_name = random.choice(self.method_names)
+
+        self._assertExpires(method_name, config.GET_RESULT_TIMEOUT)
+
+    def testExpiresFromTimeout(self):
+        """ Client uses timeout value for task expiration
+        """
+        method_name = random.choice(self.method_names)
+
+        self._assertExpires(method_name, self.test_expires,
+                            timeout=self.test_expires)
