@@ -310,10 +310,11 @@ class Client(object):
         :raise Client.ResponseError: something goes wrong (if async=False)
 
         """
+        expires = timeout or GET_RESULT_TIMEOUT
         while True:
             try:
                 try:
-                    r = signature.apply_async()
+                    r = signature.apply_async(expires=expires)
                 except Exception as e:
                     raise self.RequestError(
                         'Something goes wrong while sending request', e)
