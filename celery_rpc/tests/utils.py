@@ -5,7 +5,7 @@ from rest_framework import serializers
 from celery_rpc.tests import factories
 from celery_rpc.tests.models import SimpleModel
 from celery_rpc import utils
-from celery_rpc.base import DRF3
+from celery_rpc.base import DRF3, DRF34
 
 
 def get_model_dict(model):
@@ -14,10 +14,13 @@ def get_model_dict(model):
     if not DRF3:
         return result
     model_class = model._meta.model
+
     class Serializer(serializers.ModelSerializer):
         class Meta:
             model = model_class
-            fields = '__all__'
+            if DRF34:
+                # implicit fields: DRF 3.4 - deprecated , DRF 3.5 - removed
+                fields = '__all__'
 
     s = Serializer(instance=model)
     result = s.data
@@ -66,3 +69,29 @@ class unpack_exception(object):
         inner = utils.unpack_exception(exc_val, True)
         exc_val = inner or exc_val
         raise exc_val
+
+
+def create_m2m(field_name, field_factory=None):
+    """ Вспомогательная функция для создания Many-To-Many полей
+    для PostGeneration декрарации factory_boy.
+
+    Сделано на основе документации по factory_boy:
+    https://factoryboy.readthedocs.io/en/latest/recipes.html#simple-many-to-many-relationship
+
+    Если указан field_factory, то поле поле заполняется единственным объектом,
+    созданным указанной фабрикой.
+
+    :param field_name: Имя поля, в которое будут добавляться объекты.
+    :param field_factory: Фабрика для создания одного объекта.
+    """
+    def basic_m2m(obj, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if field_factory is not None:
+            getattr(obj, field_name).add(field_factory.create())
+        elif extracted:
+            for item in extracted:
+                getattr(obj, field_name).add(item)
+
+    return basic_m2m

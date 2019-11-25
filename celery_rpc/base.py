@@ -16,7 +16,7 @@ from .exceptions import RestFrameworkError, RemoteException
 logger = getLogger(__name__)
 
 DRF3 = VERSION >= '3.0.0'
-
+DRF34 = VERSION >= '3.4.0'
 
 class remote_error(object):
     """ Transforms all raised exceptions to a RemoteException wrapper,
@@ -151,6 +151,7 @@ class ModelTask(RpcTask):
 
         identity_field = self.identity_field
 
+        # DRF >= 3.4
         base_serializer_fields = (getattr(
             getattr(base_serializer_class, 'Meta', None), 'fields', None))
 
@@ -162,6 +163,9 @@ class ModelTask(RpcTask):
                 if DRF3:
                     # connect overriden list serializer to child serializer
                     list_serializer_class = GenericListSerializerClass
+
+                if DRF34:
+                    # implicit fields: DRF 3.4 - deprecated , DRF 3.5 - removed
                     fields = base_serializer_fields or '__all__'
 
             def get_identity(self, data):
