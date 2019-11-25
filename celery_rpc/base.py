@@ -151,6 +151,9 @@ class ModelTask(RpcTask):
 
         identity_field = self.identity_field
 
+        base_serializer_fields = (getattr(
+            getattr(base_serializer_class, 'Meta', None), 'fields', None))
+
         class GenericModelSerializer(base_serializer_class):
 
             class Meta(getattr(base_serializer_class, 'Meta', object)):
@@ -159,6 +162,7 @@ class ModelTask(RpcTask):
                 if DRF3:
                     # connect overriden list serializer to child serializer
                     list_serializer_class = GenericListSerializerClass
+                    fields = base_serializer_fields or '__all__'
 
             def get_identity(self, data):
                 try:
@@ -323,7 +327,7 @@ def atomic_commit_on_success():
     ver = django.VERSION
     if ver[0] == 1 and ver[1] < 6:
         return transaction.commit_on_success
-    elif ver[0] == 1 and ver[1] >= 6:
+    elif (ver[0] == 1 and ver[1] >= 6) or ver[0] == 2:
         return transaction.atomic
     else:
         raise RuntimeError('Invalid Django version: {}'.format(ver))

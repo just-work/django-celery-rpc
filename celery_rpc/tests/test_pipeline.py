@@ -2,11 +2,11 @@
 from __future__ import absolute_import
 import six
 from unittest import expectedFailure
-from autofixture import AutoFixture
 
 from django.test import TransactionTestCase
 
 from celery_rpc.exceptions import remote_exception_registry
+from celery_rpc.tests import factories
 from ..client import Pipe, Client
 from .utils import SimpleModelTestMixin, unpack_exception
 from .models import SimpleModel, FkSimpleModel
@@ -121,9 +121,8 @@ class TransformTests(BasePipelineTests):
     def setUp(self):
         super(TransformTests, self).setUp()
 
-        self.model = AutoFixture(SimpleModel).create_one()
-        self.fk_model = AutoFixture(
-            FkSimpleModel, field_values={'fk': self.model}).create_one()
+        self.model = factories.SimpleModelFactory()
+        self.fk_model = factories.FkSimpleModelFactory(fk=self.model)
 
     def testDeleteTransformer(self):
         """ Delete transformation works well.
