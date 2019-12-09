@@ -1,10 +1,11 @@
 # coding: utf-8
-from autofixture import AutoFixture
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
+
+from celery_rpc.tests import factories
 from celery_rpc.tests.models import SimpleModel
 from celery_rpc import utils
-from celery_rpc.base import DRF3
+from celery_rpc.base import DRF3, DRF34
 
 
 def get_model_dict(model):
@@ -13,9 +14,13 @@ def get_model_dict(model):
     if not DRF3:
         return result
     model_class = model._meta.model
+
     class Serializer(serializers.ModelSerializer):
         class Meta:
             model = model_class
+            if DRF34:
+                # implicit fields: DRF 3.4 - deprecated , DRF 3.5 - removed
+                fields = '__all__'
 
     s = Serializer(instance=model)
     result = s.data
@@ -33,11 +38,12 @@ class SimpleModelTestMixin(object):
     """ Helper for tests with model needs.
     """
     MODEL = SimpleModel
+    MODEL_FACTORY = factories.SimpleModelFactory
     MODEL_SYMBOL = 'celery_rpc.tests.models:SimpleModel'
 
     def setUp(self):
         super(SimpleModelTestMixin, self).setUp()
-        self.models = AutoFixture(self.MODEL).create(5)
+        self.models = self.MODEL_FACTORY.create_batch(5)
 
     get_model_dict = staticmethod(get_model_dict)
 

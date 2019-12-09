@@ -2,8 +2,9 @@ from __future__ import absolute_import
 from random import randint
 from uuid import uuid4
 
-from autofixture import AutoFixture
 from django.core.exceptions import ObjectDoesNotExist
+
+from celery_rpc.tests import factories
 from celery_rpc.tests.utils import (get_model_dict, SimpleModelTestMixin,
                                     get_model_dict_from_list, unpack_exception)
 from django.test import TestCase
@@ -273,7 +274,7 @@ class GetSetTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
     def testPartialUpdate(self):
         """ Check that getset allow update model partially
         """
-        m = AutoFixture(PartialUpdateModel).create_one()
+        m = factories.PartialUpdateModelFactory()
         preserve_f2 = m.f2
         expected = randint(1, 1000)
         r = self.task.delay('celery_rpc.tests.models:PartialUpdateModel',

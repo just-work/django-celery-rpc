@@ -20,7 +20,7 @@ class PartialUpdateModel(models.Model):
 
 
 class FkSimpleModel(models.Model):
-    fk = models.ForeignKey(SimpleModel)
+    fk = models.ForeignKey(SimpleModel, on_delete=models.CASCADE)
     char = models.CharField(max_length=64, blank=True, null=True)
 
 

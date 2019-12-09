@@ -1,10 +1,10 @@
 # coding: utf-8
 from __future__ import absolute_import
 
-from autofixture import AutoFixture
+from django import VERSION as django_version
 
+from celery_rpc.tests import factories
 from .. import tasks
-from .models import ManyToManyModel
 from .utils import get_model_dict
 from .test_tasks import BaseTaskTests
 
@@ -16,12 +16,15 @@ class ManyToManyUpdateTests(BaseTaskTests):
 
     def setUp(self):
         super(ManyToManyUpdateTests, self).setUp()
-        self.m2m_model = AutoFixture(ManyToManyModel).create_one()
+        self.m2m_model = factories.ManyToManyModelFactory()
 
     def testAdd(self):
         """ Add m2m relations working fine
         """
-        self.m2m_model.m2m = [self.models[0]]
+        if django_version[0] > 1:
+            self.m2m_model.m2m.set([self.models[0]])
+        else:
+            self.m2m_model.m2m = [self.models[0]]
 
         # # pre-conditions
         self.assertEquals(1, self.m2m_model.m2m.count())
@@ -40,7 +43,10 @@ class ManyToManyUpdateTests(BaseTaskTests):
     def testDelete(self):
         """ Remove m2m relations working fine
         """
-        self.m2m_model.m2m = self.models[:2]
+        if django_version[0] > 1:
+            self.m2m_model.m2m.set(self.models[:2])
+        else:
+            self.m2m_model.m2m = self.models[:2]
 
         # pre-conditions
         self.assertEquals(2, self.m2m_model.m2m.count())
