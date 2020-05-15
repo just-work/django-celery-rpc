@@ -19,7 +19,5 @@ jobs:
         run: pip install -U pip
       - name: Install Tox and any other packages
         run: pip install tox
-      - name: Dump env
-        run: env
       - name: Run Tox
-        run: python -m tox -e "py${python-version}"  # Run tox using the version of Python in `PATH`
+        run: python -m tox -e "py${{ matrix.python-version }}"  # Run tox using the version of Python in `PATH`
