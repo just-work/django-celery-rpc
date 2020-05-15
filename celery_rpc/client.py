@@ -1,6 +1,8 @@
 from __future__ import absolute_import
+
 import os
 import socket
+import warnings
 
 from celery.exceptions import TimeoutError
 from celery.utils import nodename
@@ -10,6 +12,13 @@ from .config import GET_RESULT_TIMEOUT
 from .exceptions import RestFrameworkError, remote_exception_registry
 
 TEST_MODE = bool(os.environ.get('CELERY_RPC_TEST_MODE', False))
+
+
+def _async_to_nowait(nowait=False, **kwargs):
+    if 'async' in kwargs:
+        warnings.warn("async parameter name is deprecated for python3.5+")
+        nowait = kwargs.pop('async')
+    return nowait
 
 
 class Client(object):
@@ -69,7 +78,7 @@ class Client(object):
         :param args: optional parameters of request
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
-        :param **options: optional parameter of apply_async
+        :param options: optional parameter of apply_async
         :return: celery.canvas.Signature instance
 
         """
@@ -81,12 +90,12 @@ class Client(object):
             options['routing_key'] = conf['CELERY_HIGH_PRIORITY_ROUTING_KEY']
         return task.subtask(args=args, kwargs=kwargs, **options)
 
-    def filter(self, model, kwargs=None, async=False, timeout=None, retries=1,
+    def filter(self, model, kwargs=None, nowait=False, timeout=None, retries=1,
                high_priority=False, **options):
         """ Call filtering Django model objects on server
 
         :param model: full name of model symbol like 'package.module:Class'
-        :param async: enables delayed collecting of result
+        :param nowait: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
         :param high_priority: ability to speedup consuming of the task
@@ -102,29 +111,30 @@ class Client(object):
             filters_Q - django Q-object for filtering models
             exclude_Q - django Q-object for excluding matched models
 
-        :param **options: optional parameter of apply_async
+        :param options: optional parameter of apply_async
         :return: list of filtered objects or AsyncResult if async is True
         :raise: see get_result()
 
         """
+        nowait = _async_to_nowait(nowait, **options)
         args = (model, )
         signature = self.prepare_task(utils.FILTER_TASK_NAME, args, kwargs,
                                       high_priority=high_priority, **options)
-        return self.send_request(signature, async, timeout, retries)
+        return self.send_request(signature, nowait, timeout, retries)
 
-    def update(self, model, data, kwargs=None, async=False, timeout=None,
+    def update(self, model, data, kwargs=None, nowait=False, timeout=None,
                retries=1, high_priority=False, **options):
         """ Call update Django model objects on server
 
         :param model: full name of model symbol like 'package.module:Class'
         :param data: dict with new data or list of them
         :param kwargs: optional parameters of request (dict)
-        :param async: enables delayed collecting of result
+        :param nowait: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
-        :param **options: optional parameter of apply_async
+        :param options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
             AsyncResult if async is True
         :raise InvalidRequest: if data has non iterable type
@@ -132,24 +142,25 @@ class Client(object):
         """
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        nowait = _async_to_nowait(nowait, **options)
         args = (model, data)
         signature = self.prepare_task(utils.UPDATE_TASK_NAME, args, kwargs,
                                       high_priority=high_priority, **options)
-        return self.send_request(signature, async, timeout, retries)
+        return self.send_request(signature, nowait, timeout, retries)
 
-    def getset(self, model, data, kwargs=None, async=False, timeout=None,
+    def getset(self, model, data, kwargs=None, nowait=False, timeout=None,
                retries=1, high_priority=False, **options):
         """ Call update Django model objects on server and return previous state
 
         :param model: full name of model symbol like 'package.module:Class'
         :param data: dict with new data or list of them
         :param kwargs: optional parameters of request (dict)
-        :param async: enables delayed collecting of result
+        :param nowait: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
-        :param **options: optional parameter of apply_async
+        :param options: optional parameter of apply_async
         :return: dict with old state of model or list of them or
             AsyncResult if async is True
         :raise InvalidRequest: if data has non iterable type
@@ -157,12 +168,13 @@ class Client(object):
         """
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        nowait = _async_to_nowait(nowait, **options)
         args = (model, data)
         signature = self.prepare_task(utils.GETSET_TASK_NAME, args, kwargs,
                                       high_priority=high_priority, **options)
-        return self.send_request(signature, async, timeout, retries)
+        return self.send_request(signature, nowait, timeout, retries)
 
-    def update_or_create(self, model, data, kwargs=None, async=False,
+    def update_or_create(self, model, data, kwargs=None, nowait=False,
                          timeout=None, retries=1, high_priority=False, **options):
         """ Call update Django model objects on server. If there is not for some
         data, then a new object will be created.
@@ -170,12 +182,12 @@ class Client(object):
         :param model: full name of model symbol like 'package.module:Class'
         :param data: dict with new data or list of them
         :param kwargs: optional parameters of request (dict)
-        :param async: enables delayed collecting of result
+        :param nowait: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
-        :param **options: optional parameter of apply_async
+        :param options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
             AsyncResult if async is True
         :raise InvalidRequest: if data has non iterable type
@@ -184,23 +196,25 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
-        signature = self.prepare_task(utils.UPDATE_OR_CREATE_TASK_NAME, args,
-                                    kwargs, high_priority=high_priority, **options)
-        return self.send_request(signature, async, timeout, retries)
+        nowait = _async_to_nowait(nowait, **options)
+        signature = self.prepare_task(
+            utils.UPDATE_OR_CREATE_TASK_NAME, args, kwargs,
+            high_priority=high_priority, **options)
+        return self.send_request(signature, nowait, timeout, retries)
 
-    def create(self, model, data, kwargs=None, async=False, timeout=None,
+    def create(self, model, data, kwargs=None, nowait=False, timeout=None,
                retries=1, high_priority=False, **options):
         """ Call create Django model objects on server.
 
         :param model: full name of model symbol like 'package.module:Class'
         :param data: dict with new data or list of them
         :param kwargs: optional parameters of request (dict)
-        :param async: enables delayed collecting of result
+        :param nowait: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
-        :param **options: optional parameter of apply_async
+        :param options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
             AsyncResult if async is True
         :raise InvalidRequest: if data has non iterable type
@@ -208,24 +222,26 @@ class Client(object):
         """
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+        nowait = _async_to_nowait(nowait, **options)
         args = (model, data)
-        signature = self.prepare_task(utils.CREATE_TASK_NAME, args,
-                                      kwargs, high_priority=high_priority, **options)
-        return self.send_request(signature, async, timeout, retries)
+        signature = self.prepare_task(
+            utils.CREATE_TASK_NAME, args, kwargs, high_priority=high_priority,
+            **options)
+        return self.send_request(signature, nowait, timeout, retries)
 
-    def delete(self, model, data, kwargs=None, async=False, timeout=None,
+    def delete(self, model, data, kwargs=None, nowait=False, timeout=None,
                retries=1, high_priority=False, **options):
         """ Call delete Django model objects on server.
 
         :param model: full name of model symbol like 'package.module:Class'
         :param data: dict (or list with dicts), which can contains ID
         :param kwargs: optional parameters of request (dict)
-        :param async: enables delayed collecting of result
+        :param nowait: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
-        :param **options: optional parameter of apply_async
+        :param options: optional parameter of apply_async
         :return: None or [] if multiple delete or AsyncResult if async is True
         :raise InvalidRequest: if data has non iterable type
 
@@ -233,31 +249,33 @@ class Client(object):
         if not hasattr(data, '__iter__'):
             raise self.InvalidRequest("Parameter 'data' must be a dict or list")
         args = (model, data)
+        nowait = _async_to_nowait(nowait, **options)
         signature = self.prepare_task(utils.DELETE_TASK_NAME, args, kwargs,
-                                    high_priority=high_priority, **options)
-        return self.send_request(signature, async, timeout, retries)
+                                      high_priority=high_priority, **options)
+        return self.send_request(signature, nowait, timeout, retries)
 
-    def call(self, function, args=None, kwargs=None, async=False, timeout=None,
+    def call(self, function, args=None, kwargs=None, nowait=False, timeout=None,
              retries=1, high_priority=False, **options):
         """ Call function on server
 
         :param function: full name of model symbol like 'package.module:Class'
         :param args: list with positional parameters of function
         :param kwargs: dict with named parameters of function
-        :param async: enables delayed collecting of result
+        :param nowait: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
-        :param **options: optional parameter of apply_async
+        :param options: optional parameter of apply_async
         :return: result of function call or AsyncResult if async is True
         :raise InvalidRequest: if data has non iterable type
 
         """
         args = (function, args, kwargs)
+        nowait = _async_to_nowait(nowait, **options)
         signature = self.prepare_task(utils.CALL_TASK_NAME, args, None,
                                       high_priority=high_priority, **options)
-        return self.send_request(signature, async, timeout, retries)
+        return self.send_request(signature, nowait, timeout, retries)
 
     def get_result(self, async_result, timeout=None):
         """ Collect results from delayed result object
@@ -296,13 +314,15 @@ class Client(object):
         """
         return Pipe(self)
 
-    def send_request(self, signature, async=False, timeout=None, retries=1):
+    def send_request(self, signature, nowait=False, timeout=None, retries=1,
+                     **kwargs):
         """ Sending request to a server
 
         :param signature: Celery signature instance
-        :param async: enables delayed collecting of result
+        :param nowait: enables delayed collecting of result
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
+        :param kwargs: compatibility parameters for async keyword argument
         :return: results or AsyncResult if async is True or
             exception if something goes wrong
         :raise RestFrameworkError: error in the middle of Django REST
@@ -311,14 +331,16 @@ class Client(object):
 
         """
         expires = timeout or GET_RESULT_TIMEOUT
+        nowait = _async_to_nowait(nowait, **kwargs)
         while True:
+            # noinspection PyBroadException
             try:
                 try:
                     r = signature.apply_async(expires=expires)
                 except Exception as e:
                     raise self.RequestError(
                         'Something goes wrong while sending request', e)
-                if async:
+                if nowait:
                     return r
                 else:
                     return self.get_result(r, timeout)
@@ -337,6 +359,7 @@ class Client(object):
         """
         tasks = {}
         for name in utils.TASK_NAME_MAP.values():
+            # noinspection PyUnusedLocal
             @app.task(bind=True, name=name, shared=False)
             def task_stub(*args, **kwargs):
                 pass
@@ -364,17 +387,20 @@ class Pipe(object):
         p._pipeline.append(task)
         return p
 
-    def run(self, async=False, timeout=None, retries=1, high_priority=False,
+    def run(self, nowait=False, timeout=None, retries=1, high_priority=False,
             **options):
         """ Run pipeline - send chain of RPC request to server.
         :return: list of result of each chained request.
         """
         task_name = utils.PIPE_TASK_NAME
-        signature = self.client.prepare_task(task_name, (self._pipeline,), None,
-                                             high_priority=high_priority, **options)
-        return self.client.send_request(signature, async, timeout, retries)
+        nowait = _async_to_nowait(nowait, **options)
+        signature = self.client.prepare_task(
+            task_name, (self._pipeline,), None, high_priority=high_priority,
+            **options)
+        return self.client.send_request(signature, nowait, timeout, retries)
 
-    def _prepare_task(self, task_name, args, kwargs, options=None):
+    @staticmethod
+    def _prepare_task(task_name, args, kwargs, options=None):
         return dict(name=task_name, args=args, kwargs=kwargs,
                     options=options or {})
 
@@ -400,7 +426,8 @@ class Pipe(object):
 
     def update(self, model, data=None, kwargs=None):
         if data and not hasattr(data, '__iter__'):
-            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+            raise self.client.InvalidRequest(
+                "Parameter 'data' must be a dict or list")
 
         task = self._prepare_model_change_task(utils.UPDATE_TASK_NAME, model,
                                                data, kwargs)
@@ -408,7 +435,8 @@ class Pipe(object):
 
     def update_or_create(self, model, data=None, kwargs=None):
         if data and not hasattr(data, '__iter__'):
-            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+            raise self.client.InvalidRequest(
+                "Parameter 'data' must be a dict or list")
 
         task = self._prepare_model_change_task(utils.UPDATE_OR_CREATE_TASK_NAME,
                                                model, data, kwargs)
@@ -416,7 +444,8 @@ class Pipe(object):
 
     def getset(self, model, data=None, kwargs=None):
         if data and not hasattr(data, '__iter__'):
-            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+            raise self.client.InvalidRequest(
+                "Parameter 'data' must be a dict or list")
 
         task = self._prepare_model_change_task(utils.GETSET_TASK_NAME, model,
                                                data, kwargs)
@@ -424,7 +453,8 @@ class Pipe(object):
 
     def create(self, model, data=None, kwargs=None):
         if data and not hasattr(data, '__iter__'):
-            raise self.InvalidRequest("Parameter 'data' must be a dict or list")
+            raise self.client.InvalidRequest(
+                "Parameter 'data' must be a dict or list")
 
         task = self._prepare_model_change_task(utils.CREATE_TASK_NAME, model,
                                                data, kwargs)
@@ -435,8 +465,8 @@ class Pipe(object):
         task = self._prepare_task(utils.CALL_TASK_NAME, args, kwargs)
         return self._push(task)
 
-    def translate(self, map, kwargs=None):
-        args = (map,)
+    def translate(self, mapping, kwargs=None):
+        args = (mapping,)
         options = {'transformer': True}
 
         task = self._prepare_task(utils.TRANSLATE_TASK_NAME, args,
