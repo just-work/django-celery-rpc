@@ -94,7 +94,6 @@ setup(
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Framework :: Django',
-        'Framework :: Django :: 1.3',
         'Framework :: Django :: 1.4',
         'Framework :: Django :: 1.5',
         'Framework :: Django :: 1.6',
