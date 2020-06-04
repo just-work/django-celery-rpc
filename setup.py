@@ -2,10 +2,14 @@ import os
 import re
 import subprocess
 from setuptools import setup, find_packages  # type: ignore
-from pathlib import Path
+# TODO: use pathlib in get_version
+base_dir = os.path.dirname(__file__)
 
-with open('README.md') as f:
-    long_description = f.read()
+try:
+    with open(os.path.join(base_dir, 'README.md')) as f:
+        long_description = f.read()
+except OSError:
+    long_description = None
 
 version_re = re.compile('^Version: (.+)$', re.M)
 package_name = 'djangoceleryrpc'
@@ -17,9 +21,8 @@ def get_version():
 
     https://gist.github.com/pwithnall/7bc5f320b3bdf418265a
     """
-    d: Path = Path(__file__).absolute().parent
-    git_dir = d.joinpath('.git')
-    if git_dir.is_dir():
+    git_dir = os.path.join(base_dir, '.git')
+    if os.path.isdir(git_dir):
         # Get the version using "git describe".
         cmd = 'git describe --tags --match [0-9]*'.split()
         try:
@@ -51,7 +54,7 @@ def get_version():
         try:
             with open('PKG-INFO') as v:
                 version = version_re.search(v.read()).group(1)
-        except FileNotFoundError:
+        except OSError:
             version = None
 
     return version
