@@ -115,7 +115,7 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
         if DRF3:
             dt = serializers.DateTimeField().to_representation(self.dt)
         else:
-            dt = datetime.max
+            dt = self.dt
         self.assertEqual(dt, r['datetime'])
         self.assertEqual(self.dt,
                          self.MODEL.objects.get(pk=self.models[0].pk).datetime)
