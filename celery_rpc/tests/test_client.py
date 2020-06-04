@@ -44,7 +44,7 @@ class HighPriorityRequestTests(TestCase):
                                               **kwargs):
         method = getattr(self.rpc_client, method_name)
         args = ['fake_model_or_function_name'] + list(args)
-        kwargs.update(high_priority=True, async=True)
+        kwargs.update(high_priority=True, nowait=True)
         with mock.patch.object(Client, 'send_request') as _send_request:
             method(*args, **kwargs)
         # Get first parameter of args - Celery subtask signature
@@ -161,7 +161,7 @@ class TaskExpireTests(TestCase):
         method = getattr(self.rpc_client, method_name)
         args = ['fake_model_or_function_name', {}]
         mock_name = 'celery_rpc.tasks.{}.apply_async'.format(method_name)
-        kwargs.update(async=False)
+        kwargs.update(nowait=False)
         with mock.patch(mock_name) as _apply_async:
             method(*args, **kwargs)
 
