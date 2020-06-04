@@ -1,4 +1,4 @@
-celery==3.1.26.post2
+celery>=3.1.5,<3.2
 Django==3.0.7
 djangorestframework==3.11.0
 factory-boy==2.12.0
