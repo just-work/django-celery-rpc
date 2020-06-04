@@ -331,7 +331,7 @@ def atomic_commit_on_success():
     ver = django.VERSION
     if ver[0] == 1 and ver[1] < 6:
         return transaction.commit_on_success
-    elif (ver[0] == 1 and ver[1] >= 6) or ver[0] == 2:
+    elif (ver[0] == 1 and ver[1] >= 6) or ver[0] >= 2:
         return transaction.atomic
     else:
         raise RuntimeError('Invalid Django version: {}'.format(ver))
