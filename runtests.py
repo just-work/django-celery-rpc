@@ -9,7 +9,7 @@ from django.conf import settings
 if not settings.configured:
     from celery_rpc.runtests import settings as test_settings
     kwargs = {k: getattr(test_settings, k) for k in dir(test_settings)
-              if not k.startswith('_')}
+              if not k.startswith('_') and k.isupper()}
     settings.configure(**kwargs)
 
 
