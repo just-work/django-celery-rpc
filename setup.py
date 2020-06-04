@@ -5,8 +5,11 @@ from setuptools import setup, find_packages  # type: ignore
 # TODO: use pathlib in get_version
 base_dir = os.path.dirname(__file__)
 
-with open(os.path.join(base_dir, 'README.md')) as f:
-    long_description = f.read()
+try:
+    with open(os.path.join(base_dir, 'README.md')) as f:
+        long_description = f.read()
+except OSError:
+    long_description = None
 
 version_re = re.compile('^Version: (.+)$', re.M)
 package_name = 'djangoceleryrpc'
