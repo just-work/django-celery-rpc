@@ -8,7 +8,7 @@ with open('README.md') as f:
     long_description = f.read()
 
 version_re = re.compile('^Version: (.+)$', re.M)
-package_name = 'django-celery-rpc'
+package_name = 'djangoceleryrpc'
 
 
 def get_version():

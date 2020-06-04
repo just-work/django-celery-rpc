@@ -3,7 +3,7 @@ django-celery-rpc
 
 [![Build Status](https://github.com/just-work/django-celery-rpc/workflows/build/badge.svg?branch=master&event=push)](https://github.com/just-work/django-celery-rpc/actions?query=event%3Apush+branch%3Amaster+workflow%3Abuild)
 [![codecov](https://codecov.io/gh/just-work/django-celery-rpc/branch/master/graph/badge.svg)](https://codecov.io/gh/just-work/django-celery-rpc)
-[![PyPI version](https://badge.fury.io/py/django-celery-rpc.svg)](https://badge.fury.io/py/django-celery-rpc)
+[![PyPI version](https://badge.fury.io/py/django-celery-rpc.svg)](https://badge.fury.io/py/djangoceleryrpc)
 
 Remote access from one system to models and functions of other one using Celery machinery.
 
@@ -23,6 +23,12 @@ Client and server are designed to:
  - atomic get-set model state with bulk mode support;
  - call function;
  - client does not require Django;
+ 
+## Installation
+
+```shell script
+pip install djangoceleryrpc
+```
 
 ## Basic Configuration
 
@@ -38,8 +44,8 @@ setting.py:
 ```python
 # minimal required configuration
 CELERY_RPC_CONFIG = {
-	'BROKER_URL': amqp://10.9.200.1/,
-	'CELERY_RESULT_BACKEND': 'redis://10.9.200.2/0',
+	'BROKER_URL': 'amqp://guest:guest@rabbitmq:5672//',
+	'CELERY_RESULT_BACKEND': 'redis://redis:6379/0',
 }
 ```
 
@@ -50,8 +56,8 @@ setting.py:
 ```python
 # alternate request queue and routing key
 CELERY_RPC_CONFIG = {
-	'BROKER_URL': amqp://10.9.200.1/,
-	'CELERY_RESULT_BACKEND': amqp://10.9.200.1/',
+	'BROKER_URL': 'amqp://guest:guest@rabbitmq:5672/',
+	'CELERY_RESULT_BACKEND': 'amqp://guest:guest@rabbitmq:5672/',
 	'CELERY_DEFAULT_QUEUE': 'celery_rpc.requests.alter_queue',
 	'CELERY_DEFAULT_ROUTING_KEY': 'celery_rpc.alter_routing_key'
 }
@@ -64,14 +70,14 @@ setting.py:
 ```python
 # this settings will be used in clients by default
 CELERY_RPC_CONFIG = {
-	'BROKER_URL': amqp://10.9.200.1/,
-	'CELERY_RESULT_BACKEND': 'redis://10.9.200.2/0',
+	'BROKER_URL': 'amqp://guest:guest@rabbitmq:5672/',
+	'CELERY_RESULT_BACKEND': 'redis://redis:6379/0',
 }
 
 # 'eggs' alternative configuration will be explicitly passed to the client constructor
 CELERY_RPC_EGGS_CLIENT = {
 	# BROKER_URL will be used by default from section above
-	'CELERY_RESULT_BACKEND': amqp://10.9.200.1/',
+	'CELERY_RESULT_BACKEND': 'amqp://guest:guest@rabbitmq:5672/',
 	'CELERY_DEFAULT_QUEUE': 'celery_rpc.requests.alter_queue',
 	'CELERY_DEFAULT_ROUTING_KEY': 'celery_rpc.alter_routing_key'
 }
@@ -311,9 +317,9 @@ OVERRIDE_BASE_TASKS = {
     'FunctionTask': 'package.module.MyFunctionTask'
 }
 
-Supported class names: ModelTask, ModelChangeTask, FunctionTask
 
 ```
+Supported class names: `ModelTask`, `ModelChangeTask`, `FunctionTask`
 
 ### Handling remote exceptions individually
 
