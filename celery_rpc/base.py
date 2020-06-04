@@ -15,8 +15,11 @@ from .exceptions import RestFrameworkError, RemoteException
 
 logger = getLogger(__name__)
 
-DRF3 = VERSION >= '3.0.0'
-DRF34 = VERSION >= '3.4.0'
+DRF_VERSION = tuple(map(int, VERSION.split('.')))
+
+DRF3 = DRF_VERSION >= (3, 0, 0)
+DRF34 = DRF_VERSION >= (3, 4, 0)
+
 
 class remote_error(object):
     """ Transforms all raised exceptions to a RemoteException wrapper,
@@ -39,6 +42,7 @@ class remote_error(object):
         if exc_val and self.task.app.conf['WRAP_REMOTE_ERRORS']:
             serializer = self.task.app.conf['CELERY_RESULT_SERIALIZER']
             raise RemoteException(exc_val, serializer)
+
 
 if DRF3:
     class GenericListSerializerClass(serializers.ListSerializer):
@@ -126,7 +130,8 @@ class ModelTask(RpcTask):
         """ Import class by full name, check type and return.
         """
         sym = symbol_by_name(serializer_name)
-        if inspect.isclass(sym) and issubclass(sym, serializers.ModelSerializer):
+        if inspect.isclass(sym) and issubclass(sym,
+                                               serializers.ModelSerializer):
             return sym
         raise TypeError(
             "Symbol '{}' is not a DRF serializer".format(serializer_name))
@@ -298,6 +303,7 @@ class FunctionTask(RpcTask):
 class PipeTask(RpcTask):
     """ Base Task for pipe function.
     """
+
     def __call__(self, *args, **kwargs):
         logger.debug("Got task %s", self.name,
                      extra={"referer": self.headers.get("referer")})
