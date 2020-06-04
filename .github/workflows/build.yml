@@ -20,4 +20,4 @@ jobs:
       - name: Install Tox and any other packages
         run: pip install tox
       - name: Run Tox
-        run: python -m tox -e "py${{ matrix.python-version }}"  # Run tox using the version of Python in `PATH`
+        run: python -m tox -e "python${{ matrix.python-version }}"  # Run tox using the version of Python in `PATH`
