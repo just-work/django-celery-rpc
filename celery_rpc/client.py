@@ -112,7 +112,7 @@ class Client(object):
             exclude_Q - django Q-object for excluding matched models
 
         :param options: optional parameter of apply_async
-        :return: list of filtered objects or AsyncResult if async is True
+        :return: list of filtered objects or AsyncResult if nowait is True
         :raise: see get_result()
 
         """
@@ -136,7 +136,7 @@ class Client(object):
             if server support prioritization, by default False
         :param options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
-            AsyncResult if async is True
+            AsyncResult if nowait is True
         :raise InvalidRequest: if data has non iterable type
 
         """
@@ -162,7 +162,7 @@ class Client(object):
             if server support prioritization, by default False
         :param options: optional parameter of apply_async
         :return: dict with old state of model or list of them or
-            AsyncResult if async is True
+            AsyncResult if nowait is True
         :raise InvalidRequest: if data has non iterable type
 
         """
@@ -189,7 +189,7 @@ class Client(object):
             if server support prioritization, by default False
         :param options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
-            AsyncResult if async is True
+            AsyncResult if nowait is True
         :raise InvalidRequest: if data has non iterable type
 
         """
@@ -216,7 +216,7 @@ class Client(object):
             if server support prioritization, by default False
         :param options: optional parameter of apply_async
         :return: dict with updated state of model or list of them or
-            AsyncResult if async is True
+            AsyncResult if nowait is True
         :raise InvalidRequest: if data has non iterable type
 
         """
@@ -242,7 +242,7 @@ class Client(object):
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
         :param options: optional parameter of apply_async
-        :return: None or [] if multiple delete or AsyncResult if async is True
+        :return: None or [] if multiple delete or AsyncResult if nowait is True
         :raise InvalidRequest: if data has non iterable type
 
         """
@@ -267,7 +267,7 @@ class Client(object):
         :param high_priority: ability to speedup consuming of the task
             if server support prioritization, by default False
         :param options: optional parameter of apply_async
-        :return: result of function call or AsyncResult if async is True
+        :return: result of function call or AsyncResult if nowait is True
         :raise InvalidRequest: if data has non iterable type
 
         """
@@ -323,11 +323,11 @@ class Client(object):
         :param timeout: timeout of waiting for results
         :param retries: number of tries to send request
         :param kwargs: compatibility parameters for async keyword argument
-        :return: results or AsyncResult if async is True or
+        :return: results or AsyncResult if nowait is True or
             exception if something goes wrong
         :raise RestFrameworkError: error in the middle of Django REST
-            Framework at server (if async=False).
-        :raise Client.ResponseError: something goes wrong (if async=False)
+            Framework at server (if nowait=False).
+        :raise Client.ResponseError: something goes wrong (if nowait=False)
 
         """
         expires = timeout or GET_RESULT_TIMEOUT
