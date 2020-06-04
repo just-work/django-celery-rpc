@@ -103,7 +103,9 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
 
     def setUp(self):
         super(AlterIdentityTests, self).setUp()
-        self.data = {'datetime': datetime.max, 'char': self.models[0].char}
+        self.dt = datetime.max.replace(microsecond=998000)
+        self.data = {'datetime': self.dt,
+                     'char': self.models[0].char}
         self.kwargs = {'identity': 'char'}
 
     def testUpdate(self):
@@ -111,11 +113,11 @@ class AlterIdentityTests(SimpleModelTestMixin, TestCase):
         """
         r = self.rpc_client.update(self.MODEL_SYMBOL, self.data, self.kwargs)
         if DRF3:
-            dt = serializers.DateTimeField().to_representation(datetime.max)
+            dt = serializers.DateTimeField().to_representation(self.dt)
         else:
             dt = datetime.max
         self.assertEqual(dt, r['datetime'])
-        self.assertEqual(datetime.max,
+        self.assertEqual(self.dt,
                          self.MODEL.objects.get(pk=self.models[0].pk).datetime)
 
     def testDelete(self):
