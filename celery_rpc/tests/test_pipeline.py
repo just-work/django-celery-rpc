@@ -94,8 +94,10 @@ class PipelineTests(BasePipelineTests):
         p = self.pipe
         p = p.delete(self.MODEL_SYMBOL, self.get_model_dict(self.models[0]))
         p = p.delete('invalid model symbol raise exception', {})
-        with self.assertRaisesRegexp(remote_exception_registry.ImportError, "No module named"):
+        with self.assertRaisesRegexp(remote_exception_registry.RemoteError,
+                                     "No module named") as ctx:
             p.run(propagate=False)
+        self.assertIsInstance(ctx.exception, ImportError)
 
     @expectedFailure
     def testPatchTransformer(self):
