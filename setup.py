@@ -3,8 +3,9 @@ import re
 import subprocess
 from setuptools import setup, find_packages  # type: ignore
 # TODO: use pathlib in get_version
+base_dir = os.path.dirname(__file__)
 
-with open('README.md') as f:
+with open(os.path.join(base_dir, 'README.md')) as f:
     long_description = f.read()
 
 version_re = re.compile('^Version: (.+)$', re.M)
@@ -17,8 +18,7 @@ def get_version():
 
     https://gist.github.com/pwithnall/7bc5f320b3bdf418265a
     """
-    d = os.path.dirname(__file__)
-    git_dir = os.path.join(d, '.git')
+    git_dir = os.path.join(base_dir, '.git')
     if os.path.isdir(git_dir):
         # Get the version using "git describe".
         cmd = 'git describe --tags --match [0-9]*'.split()
