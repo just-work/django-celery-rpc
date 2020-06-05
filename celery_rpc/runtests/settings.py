@@ -24,7 +24,8 @@ CELERY_RPC_CONFIG = {
     'OVERRIDE_BASE_TASKS': {
         'ModelTask': 'celery_rpc.tests.tasks.CustomModelTask'
     },
-    'WRAP_REMOTE_ERRORS': True
+    'WRAP_REMOTE_ERRORS': True,
+    'CELERY_TASK_SERIALIZER': 'x-rpc-json'
 }
 
 MIDDLEWARE_CLASSES = []

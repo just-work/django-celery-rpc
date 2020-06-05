@@ -232,7 +232,8 @@ def pipe(self, pipeline):
                     args.append(result)
                 else:
                     args.append(r)
-            r = task.apply(args=args, kwargs=t['kwargs'], headers=headers).get()
+            res = task.apply(args=args, kwargs=t['kwargs'], headers=headers)
+            r = res.get(disable_sync_subtasks=False)
             result.append(r)
 
     return result
