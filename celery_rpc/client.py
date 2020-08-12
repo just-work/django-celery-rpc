@@ -288,6 +288,7 @@ class Client(object):
         :raise Client.ResponseError: something goes wrong
 
         """
+
         timeout = timeout or GET_RESULT_TIMEOUT
         try:
             return async_result.get(timeout=timeout)
