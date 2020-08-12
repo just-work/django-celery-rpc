@@ -277,7 +277,7 @@ class Client(object):
                                       high_priority=high_priority, **options)
         return self.send_request(signature, nowait, timeout, retries)
 
-    def get_result(self, async_result, timeout=None):
+    def get_result(self, async_result, timeout=None, kwargs=None):
         """ Collect results from delayed result object
 
         :param async_result: Celery AsyncResult object
@@ -288,10 +288,12 @@ class Client(object):
         :raise Client.ResponseError: something goes wrong
 
         """
-
         timeout = timeout or GET_RESULT_TIMEOUT
+        kwargs = kwargs or {}
+        get_opts = kwargs.get('get_opts', {})
+
         try:
-            return async_result.get(timeout=timeout)
+            return async_result.get(timeout=timeout, **get_opts)
         except TimeoutError:
             raise self.TimeoutError('Timeout exceeded while waiting for results')
         except RestFrameworkError:
