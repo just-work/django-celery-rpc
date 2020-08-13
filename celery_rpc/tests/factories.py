@@ -1,5 +1,6 @@
 # coding=utf-8
 import factory
+from factory.django import DjangoModelFactory
 
 from celery_rpc.tests import models
 
@@ -17,6 +18,8 @@ def create_m2m(field_name, field_factory=None):
     :param field_name: Имя поля, в которое будут добавляться объекты.
     :param field_factory: Фабрика для создания одного объекта.
     """
+
+    # noinspection PyUnusedLocal
     def basic_m2m(obj, create, extracted, **kwargs):
         if not create:
             return
@@ -30,19 +33,19 @@ def create_m2m(field_name, field_factory=None):
     return basic_m2m
 
 
-class SimpleModelFactory(factory.DjangoModelFactory):
+class SimpleModelFactory(DjangoModelFactory):
     class Meta:
         model = models.SimpleModel
 
     char = factory.Sequence(lambda n: 'char{}'.format(n))
 
 
-class NonAutoPrimaryKeyModelFactory(factory.DjangoModelFactory):
+class NonAutoPrimaryKeyModelFactory(DjangoModelFactory):
     class Meta:
         model = models.NonAutoPrimaryKeyModel
 
 
-class PartialUpdateModelFactory(factory.DjangoModelFactory):
+class PartialUpdateModelFactory(DjangoModelFactory):
     class Meta:
         model = models.PartialUpdateModel
 
@@ -50,17 +53,15 @@ class PartialUpdateModelFactory(factory.DjangoModelFactory):
     f2 = factory.Sequence(lambda n: n)
 
 
-class FkSimpleModelFactory(factory.DjangoModelFactory):
+class FkSimpleModelFactory(DjangoModelFactory):
     class Meta:
         model = models.FkSimpleModel
 
     fk = factory.SubFactory(SimpleModelFactory)
 
 
-class ManyToManyModelFactory(factory.DjangoModelFactory):
+class ManyToManyModelFactory(DjangoModelFactory):
     class Meta:
         model = models.ManyToManyModel
 
     m2m = factory.PostGeneration(create_m2m('m2m'))
-
-
