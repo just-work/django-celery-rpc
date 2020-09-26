@@ -6,14 +6,13 @@ import uuid
 
 import six
 import jsonpickle
-from kombu.utils.encoding import bytes_t
+from kombu.serialization import registry
 
 try:
     # Django support
-    from django.utils.functional import Promise
-    from django.utils.encoding import smart_str
-    from django.db.models import Q
-
+    from django.utils.functional import Promise  # noqa
+    from django.utils.encoding import smart_str  # noqa
+    from django.db.models import Q  # noqa
     has_django = True
 except ImportError:
     has_django = False
@@ -106,12 +105,13 @@ class RpcJsonDecoder(json.JSONDecoder):
                 val[k] = jsonpickle.decode(v)
         return val
 
+
 def x_rpc_json_dumps(obj):
     return json.dumps(obj, cls=RpcJsonEncoder)
 
 
 def x_rpc_json_loads(s):
-    if isinstance(s, bytes_t):
+    if isinstance(s, six.binary_type):
         s = s.decode()
     return json.loads(s, cls=RpcJsonDecoder)
 
@@ -123,13 +123,12 @@ def x_json_dumps(obj):
 
 # XXX: Compatibility for versions <= 0.16
 def x_json_loads(s):
-    if isinstance(s, bytes_t):
+    if isinstance(s, six.binary_type):
         s = s.decode()
     return json.loads(s)
 
 
 def register_codecs():
-    from kombu.serialization import registry
     registry.register('x-rpc-json', x_rpc_json_dumps, x_rpc_json_loads,
                       'application/json+celery-rpc:v1', 'utf-8')
     # XXX: Compatibility for ver <= 0.16
