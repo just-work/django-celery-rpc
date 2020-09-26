@@ -74,7 +74,7 @@ setup(
     description='Remote access from one system to models and functions of '
                 'another one using Celery machinery.',
     install_requires=[
-        'celery >=3.1.5, <4.5.0',
+        'celery >=3.1.5, <5.0.0',
         'jsonpickle >=0.8.0, <1.4.1',
         'six',
         # celery_rpc server still needs django and djangorestframework packages,
