@@ -5,4 +5,4 @@ factory-boy==3.0.1
 mock==4.0.2
 six==1.15.0
 jsonpickle==1.4.1
-django_nose==1.4.6
+django_nose==1.4.7
