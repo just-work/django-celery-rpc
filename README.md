@@ -379,7 +379,6 @@ DerivedError = rpc_client.errors.subclass(SomeBaseError, "DerivedError")
 ## Acknowledgements
 
 Thanks for all who contributing to this project:
- - https://github.com/tumbler
  - https://github.com/voron3x
  - https://github.com/dtrst
  - https://github.com/anatoliy-larin
