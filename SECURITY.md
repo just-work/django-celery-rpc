@@ -8,7 +8,7 @@ Versions 2.x are intermediate versions supporting all that ancient versions of d
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 2.0.x   | :white_check_mark: |
+| 2.x     | :white_check_mark: |
 | 1.x     | :x:                |
 
 ## Reporting a Vulnerability

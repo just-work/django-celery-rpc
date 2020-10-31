@@ -81,7 +81,7 @@ setup(
         # but they are unnecessary for client
 
         # 'django >=1.3, <3.2',
-        # 'djangorestframework >= 2.3, <3.12'
+        # 'djangorestframework >= 2.3, <3.13'
     ],
     tests_require=[
         'nose>=1.0',
@@ -115,5 +115,6 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ]
 )
