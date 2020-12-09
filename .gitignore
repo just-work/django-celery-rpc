@@ -3,3 +3,9 @@
 *.pyc
 .tox
 local_settings.py
+/.eggs/
+/.idea/
+/build/lib/celery_rpc/
+/dist/
+/django_celery_rpc.egg-info/
+/djangoceleryrpc.egg-info/
