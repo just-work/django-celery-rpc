@@ -1,9 +1,9 @@
 Celery==5.0.4
 kombu==5.0.2
 factory-boy==3.1.0
-Django==3.1.2
-djangorestframework==3.12.1
+Django==3.1.4
+djangorestframework==3.12.2
 mock==4.0.2
 six==1.15.0
-jsonpickle==1.4.1
+jsonpickle==1.4.2
 django_nose==1.4.7
