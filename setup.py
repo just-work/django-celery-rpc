@@ -75,7 +75,7 @@ setup(
                 'another one using Celery machinery.',
     install_requires=[
         'celery >=3.1.5, <5.1.0',
-        'jsonpickle >=0.8.0, <1.4.1',
+        'jsonpickle >=0.8.0, <2.1.0',
         'six',
         # celery_rpc server still needs django and djangorestframework packages,
         # but they are unnecessary for client
@@ -85,11 +85,11 @@ setup(
     ],
     tests_require=[
         'nose>=1.0',
-        'django >=1.3, <3.2',
-        'djangorestframework >= 2.3, <3.12',
+        'django >=1.3, <3.3',
+        'djangorestframework >= 2.3, <3.13',
         'django-nose >= 1.2, <1.5',
         'factory-boy==2.8.1',
-        'mock==1.0.1',
+        'mock',
     ],
     test_suite='runtests.runtests',
     classifiers=[
