@@ -1,4 +1,4 @@
-Celery==5.0.5
+Celery==5.1.0
 kombu==5.1.0
 Django==3.2.3
 factory-boy==3.2.0
