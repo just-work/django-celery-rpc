@@ -21,6 +21,7 @@ def get_version():
 
     https://gist.github.com/pwithnall/7bc5f320b3bdf418265a
     """
+    # noinspection PyUnresolvedReferences
     git_dir = os.path.join(base_dir, '.git')
     if os.path.isdir(git_dir):
         # Get the version using "git describe".
@@ -74,7 +75,7 @@ setup(
     description='Remote access from one system to models and functions of '
                 'another one using Celery machinery.',
     install_requires=[
-        'celery >=3.1.5, <5.1.0',
+        'celery >=3.1.5, <5.2.0',
         'jsonpickle >=0.8.0, <2.1.0',
         'six',
         # celery_rpc server still needs django and djangorestframework packages,
@@ -93,7 +94,7 @@ setup(
     ],
     test_suite='runtests.runtests',
     classifiers=[
-        'Development Status :: 1 - Planning',
+        'Development Status :: 6 - Mature',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Framework :: Django',
