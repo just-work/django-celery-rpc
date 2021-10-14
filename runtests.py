@@ -5,7 +5,6 @@ from optparse import OptionParser
 import django
 
 from django.conf import settings
-from django.test.runner import DiscoverRunner
 
 if not settings.configured:
     from celery_rpc.runtests import settings as test_settings
@@ -29,6 +28,7 @@ def runtests(*test_args, **kwargs):
         test_args = ['celery_rpc']
 
     if sys.version_info >= (3, 10, 0):
+        from django.test.runner import DiscoverRunner
         test_runner = DiscoverRunner(**kwargs)
     else:
         test_runner = NoseTestSuiteRunner(**kwargs)
