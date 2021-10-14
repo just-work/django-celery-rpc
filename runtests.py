@@ -5,6 +5,7 @@ from optparse import OptionParser
 import django
 
 from django.conf import settings
+from django.test.runner import DiscoverRunner
 
 if not settings.configured:
     from celery_rpc.runtests import settings as test_settings
@@ -27,7 +28,7 @@ def runtests(*test_args, **kwargs):
     if not test_args:
         test_args = ['celery_rpc']
 
-    test_runner = NoseTestSuiteRunner(**kwargs)
+    test_runner = DiscoverRunner(**kwargs)
 
     failures = test_runner.run_tests(test_args)
     sys.exit(failures)
@@ -36,7 +37,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option('--verbosity', dest='verbosity', action='store',
                       default=1, type=int)
-    opts = getattr(NoseTestSuiteRunner, 'options', None)
+    opts = getattr(DiscoverRunner, 'options', None)
     if opts:
         parser.add_options(opts)
     (options, args) = parser.parse_args()

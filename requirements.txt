@@ -6,4 +6,3 @@ djangorestframework==3.12.4
 mock==4.0.3
 six==1.16.0
 jsonpickle==2.0.0
-django_nose==1.4.7
