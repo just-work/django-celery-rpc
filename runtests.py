@@ -28,7 +28,10 @@ def runtests(*test_args, **kwargs):
     if not test_args:
         test_args = ['celery_rpc']
 
-    test_runner = DiscoverRunner(**kwargs)
+    if sys.version_info >= (3, 10, 0):
+        test_runner = DiscoverRunner(**kwargs)
+    else:
+        test_runner = NoseTestSuiteRunner(**kwargs)
 
     failures = test_runner.run_tests(test_args)
     sys.exit(failures)
@@ -37,7 +40,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option('--verbosity', dest='verbosity', action='store',
                       default=1, type=int)
-    opts = getattr(DiscoverRunner, 'options', None)
+    opts = getattr(NoseTestSuiteRunner, 'options', None)
     if opts:
         parser.add_options(opts)
     (options, args) = parser.parse_args()
