@@ -27,7 +27,11 @@ def runtests(*test_args, **kwargs):
     if not test_args:
         test_args = ['celery_rpc']
 
-    test_runner = NoseTestSuiteRunner(**kwargs)
+    if sys.version_info >= (3, 10, 0):
+        from django.test.runner import DiscoverRunner
+        test_runner = DiscoverRunner(**kwargs)
+    else:
+        test_runner = NoseTestSuiteRunner(**kwargs)
 
     failures = test_runner.run_tests(test_args)
     sys.exit(failures)
