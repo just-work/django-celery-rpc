@@ -25,9 +25,13 @@ Client and server are designed to:
  - client does not require Django;
  
 ## Installation
-
+Install client:
 ```shell script
 pip install djangoceleryrpc
+```
+Install server:
+```shell script
+pip install djangoceleryrpc[server]
 ```
 
 ## Basic Configuration
