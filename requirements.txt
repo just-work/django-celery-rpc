@@ -1,5 +1,5 @@
 Celery==5.2.1
-kombu==5.2.1
+kombu==5.2.2
 Django==3.2.9
 factory-boy==3.2.1
 djangorestframework==3.12.4
