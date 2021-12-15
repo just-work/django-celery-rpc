@@ -1,7 +1,7 @@
 Celery==5.2.3
 Django==4.0.2
 factory-boy==3.2.1
-djangorestframework==3.12.4
+djangorestframework==3.13.1
 mock==4.0.3
 six==1.16.0
 jsonpickle==2.0.0
