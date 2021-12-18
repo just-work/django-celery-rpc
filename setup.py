@@ -81,7 +81,7 @@ setup(
     ],
     extras_require={
         'server': [
-            'django >=1.3, <3.2', 
+            'django >=1.3, <3.3', 
             'djangorestframework >= 2.3, <3.13',
         ],
     },
