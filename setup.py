@@ -81,13 +81,13 @@ setup(
     ],
     extras_require={
         'server': [
-            'django >=1.3, <3.2', 
-            'djangorestframework >= 2.3, <3.13',
+            'django >=1.3, <4.1', 
+            'djangorestframework >= 2.3, <3.14',
         ],
     },
     tests_require=[
         'nose>=1.0',
-        'django >=1.3, <3.3',
+        'django >=1.3, <4.1',
         'djangorestframework >= 2.3, <3.13',
         'django-nose >= 1.2, <1.5',
         'factory-boy==2.8.1',
@@ -111,6 +111,9 @@ setup(
         'Framework :: Django :: 2.1',
         'Framework :: Django :: 2.2',
         'Framework :: Django :: 3.0',
+        'Framework :: Django :: 3.1',
+        'Framework :: Django :: 3.2',
+        'Framework :: Django :: 4.0',
         'Operating System :: POSIX',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
