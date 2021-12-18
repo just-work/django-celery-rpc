@@ -78,12 +78,13 @@ setup(
         'celery >=3.1.5, <5.3.0',
         'jsonpickle >=0.8.0, <2.1.0',
         'six',
-        # celery_rpc server still needs django and djangorestframework packages,
-        # but they are unnecessary for client
-
-        # 'django >=1.3, <3.2',
-        # 'djangorestframework >= 2.3, <3.13'
     ],
+    extras_require={
+        'server': [
+            'django >=1.3, <3.2', 
+            'djangorestframework >= 2.3, <3.13',
+        ],
+    },
     tests_require=[
         'nose>=1.0',
         'django >=1.3, <3.3',
