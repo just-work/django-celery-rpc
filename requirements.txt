@@ -1,4 +1,4 @@
-Celery==5.2.3
+Celery==5.2.6
 Django==4.0.2
 factory-boy==3.2.1
 djangorestframework==3.13.1
