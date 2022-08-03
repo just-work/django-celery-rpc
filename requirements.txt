@@ -1,5 +1,5 @@
 Celery==5.2.6
-Django==4.0.4
+Django==4.1
 factory-boy==3.2.1
 djangorestframework==3.13.1
 mock==4.0.3
