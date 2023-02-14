@@ -20,12 +20,12 @@ DATABASES = {
 SECRET_KEY = str(uuid4())
 
 CELERY_RPC_CONFIG = {
-    'CELERY_ALWAYS_EAGER': True,
-    'OVERRIDE_BASE_TASKS': {
+    'task_always_eager': True,
+    'override_base_tasks': {
         'ModelTask': 'celery_rpc.tests.tasks.CustomModelTask'
     },
-    'WRAP_REMOTE_ERRORS': True,
-    'CELERY_TASK_SERIALIZER': 'x-rpc-json'
+    'wrap_remote_errors': True,
+    'task_serializer': 'x-rpc-json'
 }
 
 MIDDLEWARE_CLASSES = []

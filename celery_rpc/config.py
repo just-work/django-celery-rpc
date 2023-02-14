@@ -8,49 +8,49 @@ except ImportError:
     _settings = object()
 
 # Default limit for results of filter call
-FILTER_LIMIT = 1000
+filter_limit = 1000
 
 # Default timeout for getting results
-GET_RESULT_TIMEOUT = 10
+get_result_timeout = 10
 
 # Pass exceptions from server to client as instances if true.
 # By default exceptions are passed as a string.
-WRAP_REMOTE_ERRORS = False
+wrap_remote_errors = False
 
 # Provide ability to change base task class for celery-rpc server tasks.
 # Example: { 'ModelChangeTask': my.own.ModelChangeTask }
 # Key - symbolic class name, value - class with suitable interface.
 # Do it on your own risk!
-OVERRIDE_BASE_TASKS = {}
+override_base_tasks = {}
 
 # default celery rpc client name which will be passed as referer header
-RPC_CLIENT_NAME = "celery_rpc_client"
+rpc_client_name = "celery_rpc_client"
 
 # See Celery configuration parameters at
 # http://docs.celeryproject.org/en/latest/configuration.html
 # Some reasonable defaults are defined below
 
-CELERY_RESULT_BACKEND = 'cache+memory://'
+result_backend = 'cache+memory://'
 
-CELERY_DEFAULT_QUEUE = 'celery_rpc.requests'
-CELERY_DEFAULT_EXCHANGE = 'celery_rpc'
-CELERY_DEFAULT_ROUTING_KEY = 'celery_rpc'
+task_default_queue = 'celery_rpc.requests'
+task_default_exchange = 'celery_rpc'
+task_default_routing_key = 'celery_rpc'
 
 # Do not let skip messages silently (RabbitMQ)
-BROKER_TRANSPORT_OPTIONS = {'confirm_publish': True}
+broker_transport_options = {'confirm_publish': True}
 
-CELERY_ACKS_LATE = True
-CELERY_ACCEPT_CONTENT = ['json', 'x-json', 'x-rpc-json']
-CELERY_TASK_SERIALIZER = 'x-json'
-CELERY_RESULT_SERIALIZER = 'x-json'
+task_acks_late = True
+accept_content = ['json', 'x-json', 'x-rpc-json']
+task_serializer = 'x-json'
+result_serializer = 'x-json'
 
 # Options can be overridden by CELERY_RPC_CONFIG dict in Django settings.py
 _CONFIG = getattr(_settings, 'CELERY_RPC_CONFIG', {})
 
 locals().update(_CONFIG)
 
-CELERYD_TASK_SOFT_TIME_LIMIT = GET_RESULT_TIMEOUT + 1
-CELERYD_TASK_TIME_LIMIT = GET_RESULT_TIMEOUT * 2
+task_soft_time_limit = get_result_timeout + 1
+task_time_limit = get_result_timeout * 2
 
 _codecs_registered = False
 if not _codecs_registered:

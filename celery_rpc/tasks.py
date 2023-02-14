@@ -17,7 +17,7 @@ _base_model_task = get_base_task_class('ModelTask')
 @rpc.task(name=utils.FILTER_TASK_NAME, bind=True, base=_base_model_task,
           shared=False)
 def filter(self, model, filters=None, offset=0,
-           limit=config.FILTER_LIMIT, fields=None, exclude=None,
+           limit=config.filter_limit, fields=None, exclude=None,
            depth=0, manager='objects', database=None, serializer_cls=None,
            order_by=None, filters_Q=None, exclude_Q=None, *args, **kwargs):
     """ Filter Django models and return serialized queryset.

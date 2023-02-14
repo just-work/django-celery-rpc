@@ -37,7 +37,7 @@ class HighPriorityRequestTests(TestCase):
         """
         signature = self.rpc_client.prepare_task(self.task_name, None, None,
                                                  high_priority=True)
-        self.assertEquals(config.CELERY_DEFAULT_ROUTING_KEY + '.high_priority',
+        self.assertEquals(config.task_default_routing_key + '.high_priority',
                           signature.options['routing_key'])
 
     def _assertProxyMethodSupportHighPriority(self, method_name, *args,
@@ -52,7 +52,7 @@ class HighPriorityRequestTests(TestCase):
         signature = _send_request.call_args[0][0]
         msg = 'RPC-client method `{}` does not support high'.format(method_name)
         msg += ' priority requests'
-        self.assertEquals(config.CELERY_DEFAULT_ROUTING_KEY + '.high_priority',
+        self.assertEquals(config.task_default_routing_key + '.high_priority',
                           signature.options.get('routing_key'), msg)
 
     def testHighPriorityFilter(self):
@@ -146,7 +146,7 @@ class SetRefererTests(SimpleModelTestMixin, TestCase):
         signature = self.rpc_client.prepare_task(self.task_name, None, None)
         self.assertEqual(
             signature.options["headers"],
-            {"referer": "@".join([config.RPC_CLIENT_NAME, socket.gethostname()])})
+            {"referer": "@".join([config.rpc_client_name, socket.gethostname()])})
 
 
 class TaskExpireTests(TestCase):
@@ -177,7 +177,7 @@ class TaskExpireTests(TestCase):
         """
         method_name = random.choice(self.method_names)
 
-        self._assertExpires(method_name, config.GET_RESULT_TIMEOUT)
+        self._assertExpires(method_name, config.get_result_timeout)
 
     def testExpiresFromTimeout(self):
         """ Client uses timeout value for task expiration
