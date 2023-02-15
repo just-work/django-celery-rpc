@@ -81,13 +81,13 @@ setup(
     ],
     extras_require={
         'server': [
-            'django >=1.3, <4.1', 
+            'django >=1.3, <4.2', 
             'djangorestframework >= 2.3, <3.14',
         ],
     },
     tests_require=[
         'nose>=1.0',
-        'django >=1.3, <4.1',
+        'django >=1.3, <4.2',
         'djangorestframework >= 2.3, <3.13',
         'django-nose >= 1.2, <1.5',
         'factory-boy==2.8.1',
