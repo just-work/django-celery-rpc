@@ -18,13 +18,13 @@ from celery_rpc.tests.utils import SimpleModelTestMixin
 class RemoteErrorsTestMixin(SimpleModelTestMixin):
     def setUp(self):
         super(RemoteErrorsTestMixin, self).setUp()
-        self.serializer = tasks.rpc.conf['CELERY_RESULT_SERIALIZER']
-        self._wrap_errors = tasks.rpc.conf['WRAP_REMOTE_ERRORS']
-        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = True
+        self.serializer = tasks.rpc.conf['result_serializer']
+        self._wrap_errors = tasks.rpc.conf['wrap_remote_errors']
+        tasks.rpc.conf['wrap_remote_errors'] = True
 
     def tearDown(self):
         super(RemoteErrorsTestMixin, self).tearDown()
-        tasks.rpc.conf["WRAP_REMOTE_ERRORS"] = self._wrap_errors
+        tasks.rpc.conf["wrap_remote_errors"] = self._wrap_errors
 
     def testCallTask(self):
         self.assertErrorTunnelException(
@@ -109,7 +109,7 @@ class ErrorTunnelServerTestCase(RemoteErrorsTestMixin, TestCase):
 
     def testTunnelDisabled(self):
         error = ValueError(100500)
-        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = False
+        tasks.rpc.conf['wrap_remote_errors'] = False
         task = self.gettestee('call')
         patch = 'celery_rpc.base.FunctionTask.function'
         args = ('celery_rpc.tests.utils.fail', (), {}),
@@ -129,13 +129,13 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
 
     def setUp(self):
         super(ErrorTunnelClientTestCase, self).setUp()
-        self._wrap_errors = self.rpc_client._app.conf['WRAP_REMOTE_ERRORS']
-        self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = True
-        self.serializer = self.rpc_client._app.conf['CELERY_RESULT_SERIALIZER']
+        self._wrap_errors = self.rpc_client._app.conf['wrap_remote_errors']
+        self.rpc_client._app.conf['wrap_remote_errors'] = True
+        self.serializer = self.rpc_client._app.conf['result_serializer']
 
     def tearDown(self):
         super(ErrorTunnelClientTestCase, self).tearDown()
-        self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = self._wrap_errors
+        self.rpc_client._app.conf['wrap_remote_errors'] = self._wrap_errors
 
     def gettestee(self, name):
         return getattr(self.rpc_client, name)
@@ -154,7 +154,7 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
     def testUnpackingFromTunnelDisabled(self):
         """ Error wrapping disabled on server, enabled on client."""
         error = ValueError(100500)
-        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = False
+        tasks.rpc.conf['wrap_remote_errors'] = False
         method = self.gettestee('call')
         patch = 'celery_rpc.base.FunctionTask.function'
         args = ('celery_rpc.tests.utils.fail', (), {})
@@ -172,12 +172,12 @@ class ErrorTunnelClientTestCase(RemoteErrorsTestMixin, TestCase):
     def testNotUnpackingFromTunnelEnabled(self):
         """ Error wrapping disabled on client, enabled on server."""
         error = ValueError(100500)
-        serializer = tasks.rpc.conf['CELERY_RESULT_SERIALIZER']
+        serializer = tasks.rpc.conf['result_serializer']
         wrapped = exceptions.RemoteException(error, serializer)
         method = self.gettestee('call')
         patch = 'celery_rpc.base.FunctionTask.function'
         args = ('celery_rpc.tests.utils.fail', (), {})
-        self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = False
+        self.rpc_client._app.conf['wrap_remote_errors'] = False
         with mock.patch(patch, side_effect=error):
             with mock.patch('celery_rpc.utils.unpack_exception',
                             return_value=None) as unpack_mock:
@@ -207,8 +207,8 @@ class ErrorRegistryTestCase(TestCase):
 
     def setUp(self):
         super(ErrorRegistryTestCase, self).setUp()
-        self._wrap_errors = self.rpc_client._app.conf['WRAP_REMOTE_ERRORS']
-        self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = True
+        self._wrap_errors = self.rpc_client._app.conf['wrap_remote_errors']
+        self.rpc_client._app.conf['wrap_remote_errors'] = True
         self.registry = exceptions.remote_exception_registry
         self.registry.flush()
         self.module = ValueError.__module__
@@ -222,7 +222,7 @@ class ErrorRegistryTestCase(TestCase):
 
     def tearDown(self):
         super(ErrorRegistryTestCase, self).tearDown()
-        self.rpc_client._app.conf['WRAP_REMOTE_ERRORS'] = self._wrap_errors
+        self.rpc_client._app.conf['wrap_remote_errors'] = self._wrap_errors
 
     def testUnpackNativeException(self):
         exc = self.registry.unpack_exception(self.data, self.serializer)

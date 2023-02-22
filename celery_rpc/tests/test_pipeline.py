@@ -82,14 +82,14 @@ class PipelineTests(BasePipelineTests):
     def testAtomicPipelineRemoteError(self):
         """ Perform testAtomicPipeline with remote errors handling
         in another mode."""
-        old = self.client._app.conf['WRAP_REMOTE_ERRORS']
-        self.client._app.conf['WRAP_REMOTE_ERRORS'] = not old
+        old = self.client._app.conf['wrap_remote_errors']
+        self.client._app.conf['wrap_remote_errors'] = not old
         return self.testAtomicPipeline()
 
     def testWrapRemoteErrors(self):
         """ Errors wrap correctly
         """
-        self.client._app.conf['WRAP_REMOTE_ERRORS'] = True
+        self.client._app.conf['wrap_remote_errors'] = True
 
         p = self.pipe
         p = p.delete(self.MODEL_SYMBOL, self.get_model_dict(self.models[0]))
@@ -142,8 +142,8 @@ class TransformTests(BasePipelineTests):
     def testDeleteTransformerRemoteError(self):
         """ Perform testDeleteTransformer with remote errors handling
         in another mode."""
-        old = self.client._app.conf['WRAP_REMOTE_ERRORS']
-        self.client._app.conf['WRAP_REMOTE_ERRORS'] = not old
+        old = self.client._app.conf['wrap_remote_errors']
+        self.client._app.conf['wrap_remote_errors'] = not old
         return self.testDeleteTransformer()
 
     def testCreateTransformer(self):

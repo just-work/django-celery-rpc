@@ -147,13 +147,13 @@ class SingleObjectsDoesNotExistMixin(object):
 
     def testSingleObjectDoesNotExist(self):
         """ Raise exception if cannot find object in single mode  """
-        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = False
+        tasks.rpc.conf['wrap_remote_errors'] = False
         return self.checkSingleObjectDoesNotExist()
 
     def testSingleObjectDoesNotExistRemoteError(self):
         """ Perform testSingleObjectDoesNotExist with remote errors handling
         enabled."""
-        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = True
+        tasks.rpc.conf['wrap_remote_errors'] = True
         return self.checkSingleObjectDoesNotExist(remote_exception_registry.RemoteError)
 
 
@@ -220,8 +220,8 @@ class UpdateTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
     def testNoExistSerializerRemoteError(self):
         """ Perform testNoExistSerializer with remote errors handling
         in another mode."""
-        old = tasks.rpc.conf['WRAP_REMOTE_ERRORS']
-        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = not old
+        old = tasks.rpc.conf['wrap_remote_errors']
+        tasks.rpc.conf['wrap_remote_errors'] = not old
         return self.testNoExistSerializer()
 
     def testNoValidSerializer(self):
@@ -239,8 +239,8 @@ class UpdateTaskTests(SingleObjectsDoesNotExistMixin, BaseTaskTests):
     def testNoValidSerializerRemoteError(self):
         """ Perform testNoValidSerializer with remote errors handling
         in another mode."""
-        old = tasks.rpc.conf['WRAP_REMOTE_ERRORS']
-        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = not old
+        old = tasks.rpc.conf['wrap_remote_errors']
+        tasks.rpc.conf['wrap_remote_errors'] = not old
         return self.testNoValidSerializer()
 
 
@@ -342,8 +342,8 @@ class CreateTaskTests(BaseTaskTests):
     def testSingleObjectAlreadyExistRemoteError(self):
         """ Perform testSingleObjectAlreadyExist with remote errors handling
         in another mode."""
-        old = tasks.rpc.conf['WRAP_REMOTE_ERRORS']
-        tasks.rpc.conf['WRAP_REMOTE_ERRORS'] = not old
+        old = tasks.rpc.conf['wrap_remote_errors']
+        tasks.rpc.conf['wrap_remote_errors'] = not old
         return self.testSingleObjectAlreadyExist()
 
 

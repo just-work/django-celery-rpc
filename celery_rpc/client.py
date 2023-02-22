@@ -8,7 +8,7 @@ from celery.exceptions import TimeoutError
 from celery.utils import nodename
 
 from . import utils
-from .config import GET_RESULT_TIMEOUT
+from .config import get_result_timeout
 from .exceptions import RestFrameworkError, remote_exception_registry
 
 TEST_MODE = bool(os.environ.get('CELERY_RPC_TEST_MODE', False))
@@ -65,7 +65,7 @@ class Client(object):
         self.errors = remote_exception_registry
 
     def get_client_name(self):
-        return nodename(self._app.conf.get("RPC_CLIENT_NAME"),
+        return nodename(self._app.conf.get("rpc_client_name"),
                         socket.gethostname())
 
     def prepare_task(self, task_name, args, kwargs, high_priority=False,
@@ -87,7 +87,7 @@ class Client(object):
         options["headers"]["referer"] = self.get_client_name()
         if high_priority:
             conf = task.app.conf
-            options['routing_key'] = conf['CELERY_HIGH_PRIORITY_ROUTING_KEY']
+            options['routing_key'] = conf['task_high_priority_routing_key']
         return task.subtask(args=args, kwargs=kwargs, **options)
 
     def filter(self, model, kwargs=None, nowait=False, timeout=None, retries=1,
@@ -288,7 +288,7 @@ class Client(object):
         :raise Client.ResponseError: something goes wrong
 
         """
-        timeout = timeout or GET_RESULT_TIMEOUT
+        timeout = timeout or get_result_timeout
 
         try:
             return async_result.get(timeout=timeout, **options)
@@ -305,8 +305,8 @@ class Client(object):
             raise exc
 
     def _unpack_exception(self, error):
-        wrap_errors = self._app.conf['WRAP_REMOTE_ERRORS']
-        serializer = self._app.conf['CELERY_RESULT_SERIALIZER']
+        wrap_errors = self._app.conf['wrap_remote_errors']
+        serializer = self._app.conf['result_serializer']
         return utils.unpack_exception(error, wrap_errors, serializer=serializer)
 
     def pipe(self):
@@ -331,7 +331,7 @@ class Client(object):
         :raise Client.ResponseError: something goes wrong (if nowait=False)
 
         """
-        expires = timeout or GET_RESULT_TIMEOUT
+        expires = timeout or get_result_timeout
         nowait = _async_to_nowait(nowait, **kwargs)
         while True:
             # noinspection PyBroadException

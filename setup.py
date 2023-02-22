@@ -63,7 +63,7 @@ def get_version():
 
 setup(
     name=package_name,
-    version=get_version() or 'dev',
+    version=get_version() or '0.0.0-dev',
     long_description=long_description,
     long_description_content_type='text/markdown',
     packages=find_packages(),

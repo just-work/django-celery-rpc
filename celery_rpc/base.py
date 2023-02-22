@@ -23,9 +23,9 @@ DRF34 = DRF_VERSION >= (3, 4, 0)
 
 class remote_error(object):
     """ Transforms all raised exceptions to a RemoteException wrapper,
-    if enabled if CELERY_RPC_CONFIG['WRAP_REMOTE_ERRORS'].
+    if enabled if CELERY_RPC_CONFIG['wrap_remote_errors'].
 
-    Wrapper serializes exception args with CELERY_TASK_SERIALIZER of rpc app.
+    Wrapper serializes exception args with result_serializer of rpc app.
     """
 
     def __init__(self, task):
@@ -39,8 +39,8 @@ class remote_error(object):
         celery_rpc config."""
         if isinstance(exc_val, RemoteException):
             return
-        if exc_val and self.task.app.conf['WRAP_REMOTE_ERRORS']:
-            serializer = self.task.app.conf['CELERY_RESULT_SERIALIZER']
+        if exc_val and self.task.app.conf['wrap_remote_errors']:
+            serializer = self.task.app.conf['result_serializer']
             raise RemoteException(exc_val, serializer)
 
 
@@ -319,7 +319,7 @@ def get_base_task_class(base_task_name):
     :return: base celery task class
     """
     base_task = globals().get(base_task_name)
-    custom_task_name = config.OVERRIDE_BASE_TASKS.get(base_task_name)
+    custom_task_name = config.override_base_tasks.get(base_task_name)
     if not custom_task_name:
         return base_task
     sym = symbol_by_name(custom_task_name)

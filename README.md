@@ -48,8 +48,8 @@ setting.py:
 ```python
 # minimal required configuration
 CELERY_RPC_CONFIG = {
-	'BROKER_URL': 'amqp://guest:guest@rabbitmq:5672//',
-	'CELERY_RESULT_BACKEND': 'redis://redis:6379/0',
+	'broker_url': 'amqp://guest:guest@rabbitmq:5672//',
+	'result_backend': 'redis://redis:6379/0',
 }
 ```
 
@@ -60,10 +60,10 @@ setting.py:
 ```python
 # alternate request queue and routing key
 CELERY_RPC_CONFIG = {
-	'BROKER_URL': 'amqp://guest:guest@rabbitmq:5672/',
-	'CELERY_RESULT_BACKEND': 'amqp://guest:guest@rabbitmq:5672/',
-	'CELERY_DEFAULT_QUEUE': 'celery_rpc.requests.alter_queue',
-	'CELERY_DEFAULT_ROUTING_KEY': 'celery_rpc.alter_routing_key'
+	'broker_url': 'amqp://guest:guest@rabbitmq:5672/',
+	'result_backend': 'amqp://guest:guest@rabbitmq:5672/',
+	'task_default_queue': 'celery_rpc.requests.alter_queue',
+	'task_default_routing_key': 'celery_rpc.alter_routing_key'
 }
 ```
 
@@ -74,16 +74,16 @@ setting.py:
 ```python
 # this settings will be used in clients by default
 CELERY_RPC_CONFIG = {
-	'BROKER_URL': 'amqp://guest:guest@rabbitmq:5672/',
-	'CELERY_RESULT_BACKEND': 'redis://redis:6379/0',
+	'broker_url': 'amqp://guest:guest@rabbitmq:5672/',
+	'result_backend': 'redis://redis:6379/0',
 }
 
 # 'eggs' alternative configuration will be explicitly passed to the client constructor
 CELERY_RPC_EGGS_CLIENT = {
 	# BROKER_URL will be used by default from section above
-	'CELERY_RESULT_BACKEND': 'amqp://guest:guest@rabbitmq:5672/',
-	'CELERY_DEFAULT_QUEUE': 'celery_rpc.requests.alter_queue',
-	'CELERY_DEFAULT_ROUTING_KEY': 'celery_rpc.alter_routing_key'
+	'result_backend': 'amqp://guest:guest@rabbitmq:5672/',
+	'task_default_queue': 'celery_rpc.requests.alter_queue',
+	'task_default_routing_key': 'celery_rpc.alter_routing_key'
 }
 ```
 
@@ -329,7 +329,7 @@ Supported class names: `ModelTask`, `ModelChangeTask`, `FunctionTask`
 
 ```python
 # Both server and client
-CELERY_RPC_CONFIG['WRAP_REMOTE_ERRORS'] = True
+CELERY_RPC_CONFIG['wrap_remote_errors'] = True
 ```
 
 After enabling remote exception wrapping client will raise same errors happened
